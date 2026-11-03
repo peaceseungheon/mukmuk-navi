@@ -1,1 +1,21 @@
-.omc
+# OMC 런타임 상태
+.omc/
+# Claude Code 로컬 설정
+.claude/settings.local.json
+
+# 빌드 산출물
+core/target/
+app/build/
+app/.dart_tool/
+
+# 대용량 데이터 (샘플 팩 data/sample/ 은 제외하지 않음)
+*.osm.pbf
+*.mbtiles
+dist/
+data/full/
+
+# 서명·시크릿
+*.jks
+*.keystore
+key.properties
+.env
