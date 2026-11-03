@@ -14,3 +14,4 @@
 | 2026-11-03 | Harness v2로 처음 구성 (에이전트 6, 스킬 1) | 전체 | - |
 | 2026-11-03 | `datapack-build` 스킬 추가, 오케스트레이터에 데이터 팩 갱신 분기 추가 | skills, navi-architect, navi-data-dev, artifact-spec | 정기 데이터 팩 빌드 운영 절차 누락. 에이전트 추가 대신 스크립트+CI 방식 |
 | 2026-11-03 | 단계 상태(승인 기록) 절, MANUAL(승인)/BLOCKED-ENV 게이트, 병렬화 근거, 데이터 팩 CI 입력·보관 규칙 보완 | orchestrator, artifact-spec, navi-release, datapack-build | 코드 리뷰 지적(MEDIUM 5건) 반영 |
+| 2026-11-03 | tasks.md 형식 강화(최소 단위, 완료조건·우선순위 필드, `[~]` 상태, 진행 요약, PRD 추적 표) | artifact-spec, navi-architect, orchestrator, rust/flutter/data-dev | 문서만 보고 AI가 진행 상황을 파악하도록 요구 |

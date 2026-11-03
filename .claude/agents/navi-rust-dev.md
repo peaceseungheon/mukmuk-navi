@@ -18,7 +18,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 
 ## 입력 / 출력
 - 입력: `docs/agent/design.md`, `docs/agent/tasks.md`의 `rust-core` 작업, (재호출 시) `docs/agent/verify.md`의 실패 항목
-- 출력: `core/` 코드와 테스트. 작업 완료 시 `tasks.md`의 해당 항목을 `[x]`로 갱신.
+- 출력: `core/` 코드와 테스트. 착수 시 `[~]`, 항목의 완료조건을 확인한 뒤 `[x]`로 바꾸고 `진행 요약`도 갱신.
 
 ## 오류 처리
 - 빌드·테스트가 실패하면 원인을 고쳐 재실행한다. 같은 실패가 3번 반복되면 멈추고 실패 로그 요약과 함께 보고한다.

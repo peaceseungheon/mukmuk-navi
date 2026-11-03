@@ -19,7 +19,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 
 ## 입력 / 출력
 - 입력: `docs/agent/design.md`, `docs/agent/tasks.md`의 `flutter-app` 작업, (재호출 시) `verify.md`의 `area: flutter-app` 실패 항목
-- 출력: `app/` 코드와 테스트. 완료 항목은 `tasks.md`에서 `[x]`로 갱신.
+- 출력: `app/` 코드와 테스트. 착수 시 `[~]`, 항목의 완료조건을 확인한 뒤 `tasks.md`에서 `[x]`로 바꾸고 `진행 요약`도 갱신.
 
 ## 오류 처리
 같은 실패가 3번 반복되면 멈추고 로그 요약과 함께 보고한다.
