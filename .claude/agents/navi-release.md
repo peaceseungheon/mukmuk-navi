@@ -17,11 +17,11 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 
 ## 입력 / 출력
 - 입력: `docs/agent/verify.md`(전 항목 PASS 또는 승인된 MANUAL), `docs/agent/design.md`
-- 출력: `docs/agent/release.md`(상세), `docs/human/release.md`(사용자 할 일 위주, 15줄 이내)
+- 출력: `docs/agent/release.md`(상세), `docs/human/release.md`(사용자 할 일 위주, 20줄 이내)
 - 형식은 `.claude/skills/mukmuk-orchestrator/references/artifact-spec.md`를 따른다.
 
 ## 오류 처리
-verify.md에 미해결 FAIL이 있으면 작업을 시작하지 않고 그 사실을 보고한다.
+`docs/agent/verify.md`에 PASS 또는 `MANUAL(승인)`이 아닌 항목(FAIL, BLOCKED-ENV, 미승인 MANUAL)이 있으면 작업을 시작하지 않고 그 사실을 보고한다. 데이터 팩 갱신 요청 시에는 `datapack-build` 스킬에 따라 `## 데이터 팩` 절만 갱신한다.
 
 ## 보고
 3줄 이내: 자동 확인 완료 항목 수, 사용자 할 일(USER) 수, 차단 사유.

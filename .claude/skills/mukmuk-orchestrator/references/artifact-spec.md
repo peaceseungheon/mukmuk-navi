@@ -1,6 +1,6 @@
 # 산출물 규칙
 
-1인 개발이라 산출물은 아래 이 외에 만들지 않는다. 중간 보고서·회의록·별도 로그 파일을 추가하지 않는다.
+1인 개발이라 산출물은 아래 외에는 만들지 않는다. 중간 보고서·회의록·별도 로그 파일을 추가하지 않는다.
 
 ## 구조
 ```
@@ -26,6 +26,9 @@ docs/
 
 ## agent/tasks.md 형식
 ```
+## 단계 상태
+설계: 미승인 | 구현: 진행 전 | 검증: 진행 전 | 배포 준비: 진행 전
+(승인 시 `설계: 승인 2026-11-03`처럼 오케스트레이터가 갱신)
 ## rust-core
 - [ ] R1 그래프 mmap 로더 (의존: 없음)
 - [ ] R2 ... (의존: R1)  BLOCKED: 사유
@@ -35,7 +38,7 @@ docs/
 ID는 `R`/`F`/`D` + 번호. 완료한 에이전트가 `[x]`로 바꾼다.
 
 ## agent/verify.md 형식
-회차마다 `## 회차 N (날짜)` 절을 추가한다. 항목은 `- [PASS|FAIL|MANUAL|BLOCKED-ENV] 항목명 — area: rust-core|flutter-app|data-pipeline — 재현 명령 — 핵심 로그`.
+회차마다 `## 회차 N (날짜)` 절을 추가한다. 항목은 `- [PASS|FAIL|MANUAL|MANUAL(승인)|BLOCKED-ENV] 항목명 — area: rust-core|flutter-app|data-pipeline — 재현 명령 — 핵심 로그`.
 
 ## human/verify.md 형식
 KPI 4종 표(목표 / 측정값 / 판정)와 판정 한 줄. 측정하지 못한 값은 `미측정(MANUAL)`로 쓴다.
