@@ -27,10 +27,6 @@ data/*.zip
 # Python 캐시
 __pycache__/
 *.pyc
-
-# cargokit 빌드 도구가 실행 시 만드는 잠금 파일
-app/rust_builder/cargokit/build_tool/pubspec.lock
-
 # 서명·시크릿
 *.jks
 *.keystore
