@@ -32,3 +32,6 @@ __pycache__/
 *.keystore
 key.properties
 .env
+
+# Android 빌드 산출물(Gradle)
+app/android/build/
