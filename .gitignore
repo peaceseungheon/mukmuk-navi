@@ -17,6 +17,12 @@ data/full/
 data/raw/
 data/work/
 data/sample/
+data/*.zip
+*.zip
+
+# IDE·로컬 도구 상태
+.idea/
+.codegraph/
 
 # 서명·시크릿
 *.jks
