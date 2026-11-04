@@ -1,0 +1,41 @@
+# 검증 결과 (agent)
+
+- 기준: `docs/agent/design.md`(승인 2026-11-03, 포맷 v1), `docs/agent/tasks.md`
+- 환경: Windows 10 (Git Bash) / rustc 1.96.1 / WSL2 Ubuntu / Flutter 3.22.1 / Dart 3.4.1
+- 이번 회차 미수행: `pipeline/build_all --skip-extract` 재실행(기존 `data/sample/` 산출물을 현재 실행으로 검증). 직전 로그 `data/work/build_all_final.log`에 smoke OK·zip OK 기록.
+
+## 회차 1 (2026-11-04)
+
+### rust-core
+- [PASS] 포맷 검사 — area: rust-core — `cd core && cargo fmt --check` — exit 0, diff 없음
+- [PASS] 정적 분석 — area: rust-core — `cd core && cargo clippy --workspace --all-targets -- -D warnings` — `Finished dev profile ... in 1.22s`, exit 0
+- [PASS] 전체 테스트 — area: rust-core — `cd core && cargo test --workspace` — 41 passed / 0 failed (unit 34, bridge 3, compiler 2, kpi 1, zero_copy 1)
+- [PASS] R2 zero-copy 힙 상한 — area: rust-core — `cargo test -p mukmuk-core --test zero_copy` — `heap_allocations_do_not_scale_with_graph_file_size ... ok`
+- [PASS] FFI 계약 대조 — area: rust-core — `docs/agent/design.md` 2.1/2.2 ↔ `core/bridge/src/api/{mod,types}.rs` ↔ `app/lib/ffibindings/api.dart` — 5개 함수 시그니처·타입·Dart camelCase(`initEngine`/`searchPoi`/`planRoute`/`subscribeNavigation`/`updatePosition`) 일치, `ffi_contract_flow ... ok`. 의존 버전도 설계와 일치(FRB 2.13.0, rkyv 0.8.18, memmap2 0.9.12, rusqlite 0.41.1, fast_paths 1.0.0)
+- [PASS] R12 KPI 하네스 실행 — area: rust-core — `cargo test -p mukmuk-core --release --test kpi -- --nocapture` — `KPI reroute avg: 25.353µs`, `KPI search avg: 782.509µs`, `RSS delta=245760`
+
+### data-pipeline
+- [PASS] manifest 무결성 — area: data-pipeline — `sha256sum data/sample/{map/korea.mbtiles,graph/korea.graph.bin,poi/korea.poi.sqlite}` ↔ `data/sample/manifest.json` — 3/3 size·sha256 일치, `format_version=1`
+- [PASS] 팩 스모크(코어가 실제 산출물을 읽음) — area: data-pipeline — `cargo run --quiet --manifest-path pipeline/smoke/Cargo.toml -- data/sample` — `smoke OK: nodes=180360 route=531m/96s steps=2 named=0 | fts '살루떼' -> 1 results`
+- [PASS] zip 배포본 — area: data-pipeline — `python -c "import zipfile..."` — entries=4(graph/map/poi/manifest), 3/3 size·sha256 일치, manifest 포함
+- [PASS] POI sqlite 계약 — area: data-pipeline — `python -c "import sqlite3..."` — `application_id=0x4D554B4D`, `user_version=1`, poi 5792행, FTS `name_chosung:ㅅㄹㄸ`→1건, `name:살루*`→1건
+- [PASS] mbtiles 메타 — area: data-pipeline — 위 sqlite3 조회 — `format=mvt`, `minzoom=6`, `maxzoom=14`, vector_layers 6종(roads/water/landuse/buildings/boundaries/poi), tiles 833. bounds/center는 대전 샘플 범위(`127.25,36.20,127.60,36.55`)로 설계의 전국 값과 다름 — 전국 팩에서 설계값 준수 필요
+- 참고: 그래프 바이너리에 도로명 존재 확인(2811개 문자열, 첫 항목 `대덕대로`). 스모크 경로 `named=0`은 해당 531m 경로 에지에 도로명이 없기 때문이며 포맷 문제 아님
+
+### flutter-app
+- [BLOCKED-ENV] F1~F7 (7개 작업) — area: flutter-app — `dart --version` (`3.4.1`) < FRB 2.13 요구 `3.9.2`; `app/`에 `pubspec.yaml`·`lib/main.dart` 없음(`lib/ffibindings`만 존재) — 설계 R10 비고 및 사용자 결정에 따라 보류. FAIL 아님. 해소: Flutter SDK 업그레이드 후 `flutter pub get && flutter analyze`
+
+### KPI 4종
+- [PASS] 메모리 — 코어 호스트 RSS — area: rust-core — `cargo test -p mukmuk-core --release --test kpi -- --nocapture` — 600회(재탐색 300+검색 300) 후 RSS 5,464,064→5,709,824 B, **+245,760 B(0.24MB)** < 코어 힙 예산 20MB. 단 합성 20x20(400노드) 그래프 + fixture 팩 기준
+- [MANUAL(승인)] 메모리 — 실기기 총 RAM 150MB, 4시간 모의주행 누수 0% — `adb shell dumpsys meminfo <pkg>` (4시간 주행 전후 비교)
+- [PASS] 재탐색 — 호스트 — area: rust-core — 위 KPI 하네스 — 평균 **25.4µs**(300회, 최댓값 미기록) < 1s. 스냅+CH 쿼리+디코드 구간만 측정(직렬화·push·워커 핸드오프 제외), 합성 그래프 기준
+- [MANUAL(승인)] 재탐색 — 실기기/전국 규모 — 실기기에서 이탈→재탐색 체감 시간 측정(전국 팩 필요)
+- [MANUAL(승인)] 프레임 — 드랍 1% 미만(60fps) — `flutter run --profile` + DevTools Performance. 앱 미구현(F1~F7 보류)으로 정적 확인도 불가
+- [PASS] 검색 — 호스트 — area: rust-core — 위 KPI 하네스 — 평균 **782.5µs**(300회, fixture 팩, 반경 10km) < 0.5s
+- [MANUAL(승인)] 검색 — 전국 50km 규모 — 전국 팩에서 반경 50km 검색 시간 측정(샘플 5,792 POI는 전국 규모 아님)
+
+### 종합
+- FAIL: 0건. rust-core(P1 12/12)·data-pipeline(P1 6/6)는 실행 결과로 통과.
+- KPI는 호스트·합성/픽스처 규모에서만 측정됨. 실기기 4종·전국 규모 수치는 `MANUAL`이며, **2026-11-04 사용자 승인**으로 `MANUAL(승인)` 처리했다. 앱 재개 후 실측값으로 대체한다.
+- flutter-app F1~F7은 SDK 미달로 `BLOCKED-ENV`(사용자 결정). 구현 결함으로 인한 FAIL은 아님.
+- 단계 상태: 검증 승인 2026-11-04. 배포 준비(4단계)는 사용자 결정으로 **보류**(Flutter SDK 업그레이드·앱 재개 후).

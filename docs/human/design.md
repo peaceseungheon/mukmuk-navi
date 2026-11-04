@@ -1,0 +1,27 @@
+# 묵묵 설계 요약 (사람용)
+
+상세 설계: [docs/agent/design.md](../agent/design.md) · 작업 목록: [docs/agent/tasks.md](../agent/tasks.md)
+
+## 결정
+
+- **연산은 Rust, 화면은 Flutter.** 라우팅·맵매칭·TBT·검색을 Rust 코어가 전담하고 Flutter는 지도 렌더·UI·음성만 담당한다. Dart에 무거운 연산을 두지 않아 60fps를 지킨다.
+- **경로 탐색은 Contraction Hierarchies.** 전처리는 오프라인에서 하고, 기기에서는 mmap + rkyv zero-copy로 파일을 통째로 힙에 올리지 않고 쿼리만 한다(전국 그래프에서 1초 재탐색 + 150MB RAM 달성의 핵심).
+- **FFI는 flutter_rust_bridge 2.x async.** 함수 5개(`init_engine`, `search_poi`, `plan_route`, `subscribe_navigation`, `update_position`)와 에러 타입·스레드 규칙을 설계 문서에 고정했다.
+- **데이터 팩 = manifest.json + mbtiles + 그래프 바이너리 + POI sqlite.** 파일별 레이아웃·스키마를 포맷 버전 1로 고정했다.
+- **도로명 안내.** 그래프 바이너리에 도로명 테이블(`road_names`·`edge_road_name`)을 추가해 `RouteStep.road_name`을 실제로 채운다(아직 배포된 팩이 없어 포맷 버전 1 유지).
+- **P2(데이터 업데이트)는 P1 완료 후** 별도 단계로 분리했다.
+
+## 위험
+
+- **CH 전처리가 최대 난이도.** 가장 복잡한 Rust 작업이라 sonnet(rust-dev)이 담당하고, fast_paths로 결과를 교차검증한다.
+- **전국 데이터 규모 미확인.** z14 mbtiles는 수 GB가 될 수 있어 줌 레벨·저장 용량 조정이 필요할 수 있다.
+- **NGII 수치지도 획득·라이선스 미정.** 자동 다운로드가 불가능해 선택 입력으로 두고 OSM만으로도 빌드되게 했다.
+
+## 미결 사항 (확인 필요, design.md 6절에 8건)
+
+NGII 데이터 경로/라이선스, 검색 기본 반경(50km로 설계), 도보 라우팅 표현 범위, mbtiles 줌 레벨, TTS 오프라인 음성 미설치 처리, 초성 검색 경계 케이스, 전국 팩 아티팩트 한계, OSM ODbL 라이선스.
+
+## 할 일
+
+1. 이 문서와 「미결 사항」을 확인하고 **설계를 승인**한다.
+2. 승인 시 구현 단계: rust-dev(12개) / flutter-dev(8개) / data-dev(8개) 작업을 의존 순서대로 진행.
