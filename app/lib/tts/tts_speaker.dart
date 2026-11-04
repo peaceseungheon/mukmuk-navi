@@ -50,3 +50,12 @@ final class FlutterTtsSpeaker implements TtsSpeaker {
   @override
   Future<void> stop() => _tts.stop();
 }
+
+/// 앱 시작 시 한 번 호출한다. 탐색 예외도 "음성 없음"으로 취급해 내비 자체는 계속 동작시킨다.
+Future<bool> probeTtsAvailable(TtsSpeaker tts) async {
+  try {
+    return await tts.init();
+  } catch (_) {
+    return false;
+  }
+}

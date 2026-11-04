@@ -52,13 +52,7 @@ Future<AppServices> bootServices() async {
   final info = await engine.init(kPackDir);
 
   final tts = FlutterTtsSpeaker();
-  var ttsAvailable = false;
-  try {
-    ttsAvailable = await tts.init();
-  } catch (_) {
-    // 플랫폼 TTS 초기화 실패는 음성 생략으로 처리한다(내비 자체는 계속 동작).
-    ttsAvailable = false;
-  }
+  final ttsAvailable = await probeTtsAvailable(tts);
 
   final nav = NavigationController(engine: engine, tts: tts);
   await nav.ensureSubscribed();
