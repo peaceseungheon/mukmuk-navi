@@ -1,0 +1,4 @@
+rust_input: crate::api
+rust_root: .
+rust_output: src/frb_generated.rs
+dart_output: ../../app/lib/ffibindings

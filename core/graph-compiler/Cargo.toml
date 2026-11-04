@@ -1,0 +1,15 @@
+[package]
+name = "graph-compiler"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "graph-compiler"
+path = "src/main.rs"
+
+[dependencies]
+mukmuk-core = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
