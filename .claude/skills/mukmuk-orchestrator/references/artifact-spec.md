@@ -11,8 +11,9 @@ docs/
     tasks.md          # 작업 체크리스트 (유일한 진행 상태 원본)
     verify.md         # 검증 결과 (회차 누적)
     release.md        # 배포 체크리스트
+    standards.md      # 개발 표준(코드·테스트·브랜치·커밋) 상세, 2026-11-04 신설
   human/              # 사람이 읽는 문서: 요약, 각 20~40줄 이내
-    design.md, verify.md, release.md
+    design.md, verify.md, release.md, standards.md
 ```
 `human/`은 같은 단계의 에이전트가 `agent/` 문서를 마친 뒤 **요약만** 쓴다. 사람이 판단·승인하는 데 필요한 것(결정, 위험, 할 일)만 담고 상세 근거는 `agent/` 링크로 대신한다.
 
