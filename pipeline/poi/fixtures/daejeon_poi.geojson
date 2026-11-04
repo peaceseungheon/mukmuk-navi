@@ -1,0 +1,33 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.4270, 36.3275]},
+     "properties": {"@id": "node/1001", "name": "성심당 본점", "shop": "bakery", "addr:street": "대전로", "addr:housenumber": "480"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.4302, 36.3486]},
+     "properties": {"@id": "node/1002", "name": "충남대학교병원", "amenity": "hospital", "addr:street": "문화로", "addr:housenumber": "282"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.4376, 36.3512]},
+     "properties": {"@id": "node/1003", "name": "대전복합터미널", "amenity": "bus_station"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.3848, 36.3504]},
+     "properties": {"@id": "node/1004", "name": "대전시청", "amenity": "townhall"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.4291, 36.3164]},
+     "properties": {"@id": "node/1005", "name": "한화생명 볼파크", "leisure": "stadium"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.3990, 36.3765]},
+     "properties": {"@id": "node/1006", "name": "엑스포과학공원", "tourism": "attraction", "addr:full": "대전광역시 유성구 대덕대로 480"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.3415, 36.3555]},
+     "properties": {"@id": "node/1007", "name": "유성온천공원", "tourism": "attraction"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.4262, 36.3289]},
+     "properties": {"@id": "node/1008", "name": "대전중앙시장", "amenity": "marketplace"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.3830, 36.3516]},
+     "properties": {"@id": "node/1009", "name": "스타벅스 대전둔산점", "amenity": "cafe", "addr:street": "둔산로", "addr:housenumber": "101"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.3900, 36.3430]},
+     "properties": {"@id": "node/1010", "name": "GS칼텍스 대전주유소", "amenity": "fuel", "addr:street": "계룡로", "addr:housenumber": "55"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.3856, 36.3519]},
+     "properties": {"@id": "node/1011", "name": "둔산 공영주차장", "amenity": "parking"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.3842, 36.3524]},
+     "properties": {"@id": "node/1012", "name": "파리바게뜨 둔산점", "shop": "bakery", "addr:street": "대덕대로", "addr:housenumber": "12", "name:ko": "파리바게뜨 둔산점"}},
+    {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[127.40, 36.34], [127.41, 36.35]]},
+     "properties": {"@id": "way/2001", "name": "무시되는 도로", "highway": "residential"}},
+    {"type": "Feature", "geometry": {"type": "Point", "coordinates": [127.40, 36.35]},
+     "properties": {"@id": "node/1013", "amenity": "bench"}}
+  ]
+}
