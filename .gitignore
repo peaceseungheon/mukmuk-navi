@@ -24,6 +24,10 @@ data/*.zip
 .idea/
 .codegraph/
 
+# Python 캐시
+__pycache__/
+*.pyc
+
 # 서명·시크릿
 *.jks
 *.keystore
