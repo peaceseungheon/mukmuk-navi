@@ -5,14 +5,18 @@
 
 # 빌드 산출물
 core/target/
+pipeline/smoke/target/
 app/build/
 app/.dart_tool/
 
-# 대용량 데이터 (샘플 팩 data/sample/ 은 제외하지 않음)
+# 대용량 원본·산출물 (스크립트로 재생성)
 *.osm.pbf
 *.mbtiles
 dist/
 data/full/
+data/raw/
+data/work/
+data/sample/
 
 # 서명·시크릿
 *.jks
