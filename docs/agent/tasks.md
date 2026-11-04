@@ -9,7 +9,7 @@
 설계: 승인 2026-11-03 | 구현: P1 코어·데이터 완료, 앱 진행 중(Flutter 3.47.9/Dart 3.13.7 업그레이드 후 재개 2026-11-04) | 검증: 승인 2026-11-04 (MANUAL 4건 승인) | 배포 준비: 보류 (Flutter SDK 업그레이드 후)
 
 ## 진행 요약
-rust-core 12/12 | flutter-app 7/10 (F1~F7 완료·에뮬레이터 실측으로 F1 확인, 후속 결함 F9·F10 추가, F8은 P2) | data-pipeline 6/8 (P1 D1~D6 완료, D7·D8은 P2)
+rust-core 12/12 | flutter-app 9/10 (P1 F1~F7·F9·F10 완료, F8은 P2 미착수) | data-pipeline 6/8 (P1 D1~D6 완료, D7·D8은 P2)
 
 ## rust-core
 ### 데이터 팩·그래프 로딩
@@ -47,8 +47,8 @@ rust-core 12/12 | flutter-app 7/10 (F1~F7 완료·에뮬레이터 실측으로 F
 - [x] F7 TTS 음성 안내 (의존: R11, F6) [P1] — 완료조건: Instruction 이벤트→네이티브 TTS(ko-KR 오프라인 음성) 발화, 네트워크 미사용 — 비고: 이벤트→문장 생성·발화 호출을 단위 테스트로 확인. 네트워크 음성 제외(network_required) 필터 적용. 실 발화와 오프라인 음성 미설치 시 동작(design 6절 5번)은 MANUAL. 음성 미설치면 발화를 생략하고 안내 문구만 표시
 
 ### 에뮬레이터 실측 후속 결함 (2026-11-04)
-- [ ] F9 위치 서비스 꺼짐·권한 거부 처리 (의존: F5) [P1] — 완료조건: geolocator 위치 스트림의 `LocationServiceDisabledException`·권한 거부가 unhandled exception 없이 처리되어 사용자에게 안내 문구가 표시되고 앱이 계속 동작, 해당 경로 단위 테스트 추가
-- [ ] F10 도로 레이어 스타일 폭·지오메트리 경고 수정 (의존: F2) [P1] — 완료조건: 에뮬레이터 z13 이하에서도 도로가 줌에 비례한 선 두께로 구분되어 보이고(스크린샷 확인), `Invalid geometry in line layer` 경고의 원인(타일 지오메트리 또는 스타일 `line-*` 표현식)을 확인해 해소하거나 무해함을 근거와 함께 기록
+- [x] F9 위치 서비스 꺼짐·권한 거부 처리 (의존: F5) [P1] — 완료조건: geolocator 위치 스트림의 `LocationServiceDisabledException`·권한 거부가 unhandled exception 없이 처리되어 사용자에게 안내 문구가 표시되고 앱이 계속 동작, 해당 경로 단위 테스트 추가 — 비고: listenFixes/locationErrorText(test/nav/listen_fixes_test.dart)로 스트림 오류를 안내 문구로 전달, 홈 스낵바·주행 화면 notice 연결. 실기기 위치 서비스 토글 확인은 MANUAL
+- [x] F10 도로 레이어 스타일 폭·지오메트리 경고 수정 (의존: F2) [P1] — 완료조건: 에뮬레이터 z13 이하에서도 도로가 줌에 비례한 선 두께로 구분되어 보이고(스크린샷 확인), `Invalid geometry in line layer` 경고의 원인(타일 지오메트리 또는 스타일 `line-*` 표현식)을 확인해 해소하거나 무해함을 근거와 함께 기록 — 비고: 타일 roads는 전부 LineString으로 정상이나 boundaries 등 한 레이어에 점·선·면이 혼재 → 스타일에 geometry-type 필터 추가 후 경고 0건(에뮬레이터 로그), 도로를 등급별 3레이어·지수 보간 폭으로 변경. 스크린샷은 scratchpad f10_before/after_default.png / 재검증(2026-11-04): z12 3회 연속 실행(15:37:56·15:39:16·15:40:36) 경고 0건, z10(15:41:56)·z8(15:43:16)도 0건, 스크린샷 scratchpad f10_z12_*·f10_z10_*·f10_z8_* (줌 구분 폭 확인). 초기 줌은 임시 변경 후 12로 복구
 
 ### 데이터 관리 (P2)
 - [ ] F8 데이터 팩 업데이트 UI (의존: F1) [P2] — 완료조건: Wi-Fi에서 manifest 비교 후 새 팩 다운로드·교체 플로우 동작
