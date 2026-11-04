@@ -9,6 +9,7 @@ import 'package:mukmuk_app/map/mbtiles_style.dart';
 import 'package:mukmuk_app/map/navi_map.dart';
 import 'package:mukmuk_app/nav/navigation_screen.dart';
 import 'package:mukmuk_app/search/search_screen.dart';
+import 'package:mukmuk_app/tts/tts_install_banner.dart';
 
 /// 오프라인 지도 + 목적지 검색 진입점.
 class HomeScreen extends StatefulWidget {
@@ -123,6 +124,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            top: MediaQuery.paddingOf(context).top + 84,
+            child: TtsInstallBanner(ttsAvailable: _s.ttsAvailable),
           ),
           Positioned(
             left: 16,

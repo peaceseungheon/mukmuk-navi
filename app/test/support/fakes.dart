@@ -66,9 +66,14 @@ class FakeNaviEngine implements NaviEngine {
 class FakeTtsSpeaker implements TtsSpeaker {
   final List<String> spoken = [];
   bool available = true;
+  Object? initError;
 
   @override
-  Future<bool> init() async => available;
+  Future<bool> init() async {
+    final error = initError;
+    if (error != null) throw error;
+    return available;
+  }
 
   @override
   Future<void> speak(String text) async {
