@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
     position: widget.services.nav.position,
     tapMarker: _tapMarker,
     onMapTap: _onMapTap,
+    waypoints: widget.services.waypointPoints,
   );
   bool _planning = false;
   final ValueNotifier<GeoPoint?> _tapMarker = ValueNotifier(null);
@@ -122,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
       _s.nav.clearRoute();
-      _s.waypoints.value = const [];
+      _s.clearWaypoints();
     } on TripPlanException catch (e) {
       if (!mounted) return;
       _showMessage(tripFailureText(e, tripStops(origin, raw).length));

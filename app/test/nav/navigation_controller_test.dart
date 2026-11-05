@@ -307,6 +307,20 @@ void main() {
       );
     }
 
+    test('남은 경유지 좌표는 도착할 때마다 하나씩 줄고 목적지는 포함하지 않는다', () async {
+      await startThreeLegs();
+      expect(nav.waypoints.value, [w1, w2]);
+
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+      expect(nav.waypoints.value, [w2]);
+
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+      expect(nav.waypoints.value, isEmpty);
+      expect(nav.arrived.value, isFalse);
+    });
+
     test('끝점이 활성 구간 끝에서 30m를 넘게 어긋난 재탐색은 버린다', () async {
       await nav.ensureSubscribed();
       nav.startTrip(

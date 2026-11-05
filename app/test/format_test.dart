@@ -13,4 +13,15 @@ void main() {
     expect(formatDurationS(3900), '1시간 5분');
     expect(formatDurationS(7200), '2시간');
   });
+
+  test('주행 요약은 남은 경유지가 있을 때만 경유 문구를 앞에 붙인다', () {
+    expect(
+      tripSummaryText(remainingWaypoints: 0, distanceM: 1250, durationS: 200),
+      '1.3km · 4분',
+    );
+    expect(
+      tripSummaryText(remainingWaypoints: 2, distanceM: 1250, durationS: 200),
+      '경유 2곳 남음 · 1.3km · 4분',
+    );
+  });
 }

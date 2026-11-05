@@ -32,6 +32,9 @@ class NavigationController {
   /// 활성 구간 번호(0부터). 코어가 안내 중인 구간이다.
   final ValueNotifier<int> activeLeg = ValueNotifier(0);
 
+  /// 아직 도착하지 않은 경유지 좌표(순서대로, 목적지 제외). 지도 마커와 요약에 쓴다.
+  final ValueNotifier<List<GeoPoint>> waypoints = ValueNotifier(const []);
+
   /// 사용자에게 한 번 보여줄 오류 문구. 소비 후 화면이 null로 되돌린다.
   final ValueNotifier<String?> notice = ValueNotifier(null);
 
@@ -81,6 +84,7 @@ class NavigationController {
     _legFailed = false;
     _suppressDepartSpeech = false;
     activeLeg.value = 0;
+    _publishWaypoints();
     final shown = _refreshRoute();
     instruction.value = null;
     offRoute.value = false;
@@ -97,6 +101,7 @@ class NavigationController {
     _legFailed = false;
     _suppressDepartSpeech = false;
     activeLeg.value = 0;
+    _publishWaypoints();
     route.value = null;
     instruction.value = null;
     offRoute.value = false;
@@ -179,6 +184,7 @@ class NavigationController {
       if (serial != _tripSerial) return;
       _legs[k + 1] = next;
       activeLeg.value = k + 1;
+      _publishWaypoints();
       _refreshRoute();
       instruction.value = null;
       offRoute.value = false;
@@ -219,6 +225,13 @@ class NavigationController {
     return shown;
   }
 
+  /// 활성 구간의 끝(다음 경유지 또는 목적지)부터 목적지 직전까지가 남은 경유지다.
+  void _publishWaypoints() {
+    waypoints.value = [
+      for (var i = activeLeg.value; i < _stops.length - 1; i++) _stops[i].point,
+    ];
+  }
+
   bool get _hasNextLeg => activeLeg.value < _legs.length - 1;
 
   bool get _canSwitch => _hasNextLeg && !_switching && !_legFailed;
@@ -249,6 +262,7 @@ class NavigationController {
     offRoute.dispose();
     arrived.dispose();
     activeLeg.dispose();
+    waypoints.dispose();
     notice.dispose();
   }
 }

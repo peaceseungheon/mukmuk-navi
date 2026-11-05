@@ -56,12 +56,22 @@ final class AppServices {
   bool addWaypoint(Stop stop) {
     final current = waypoints.value;
     if (current.length >= kMaxWaypoints) return false;
-    waypoints.value = [...current, stop];
+    _setWaypoints([...current, stop]);
     return true;
   }
 
   void removeWaypointAt(int index) {
-    waypoints.value = [...waypoints.value]..removeAt(index);
+    _setWaypoints([...waypoints.value]..removeAt(index));
+  }
+
+  void clearWaypoints() => _setWaypoints(const []);
+
+  /// 지도 마커용 좌표. [waypoints]와 같은 순서이며 항상 같이 바뀐다.
+  final ValueNotifier<List<GeoPoint>> waypointPoints = ValueNotifier(const []);
+
+  void _setWaypoints(List<Stop> next) {
+    waypoints.value = next;
+    waypointPoints.value = [for (final s in next) s.point];
   }
 
   /// 경로·검색 기준점: 지정한 출발지 → GPS 위치 → 기본값(대전 시청) 순서.
@@ -74,6 +84,7 @@ final class AppServices {
     await _gpsSub?.cancel();
     pickedOrigin.dispose();
     waypoints.dispose();
+    waypointPoints.dispose();
     lastGps.dispose();
     gpsNotice.dispose();
     packUpdate?.dispose();

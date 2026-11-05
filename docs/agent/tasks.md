@@ -6,10 +6,10 @@
 - 착수 시 `[~]`, 완료 시 `[x]`로 바꾸고 `진행 요약` 수치를 함께 갱신한다.
 
 ## 단계 상태
-설계: 승인 2026-11-03 (F12 설계 보완 승인 2026-11-05) | 구현: P1 전체 완료(F12·D7·D8은 P2 미착수) | 검증: 승인 2026-11-04 (회차 2, MANUAL 9건 승인) | 배포 준비: 진행 중 2026-11-04
+설계: 승인 2026-11-03 (F12 설계 보완 승인 2026-11-05) | 구현: P1 전체 완료, F12 경유지 완료(D7·D8은 P2 미착수) | 검증: 승인 2026-11-04 (회차 2, MANUAL 9건 승인) | 배포 준비: 진행 중 2026-11-04
 
 ## 진행 요약
-rust-core 12/12 | flutter-app 12/13 (F1~F11·F13 완료, F12는 P2 진행 중 — 하위 F12a~F12g 6/7, 다음 착수: F12g) | data-pipeline 6/8 (P1 D1~D6 완료, D7·D8은 P2)
+rust-core 12/12 | flutter-app 13/13 (F1~F13 완료, F12 경유지 완료 — 하위 F12a~F12g 7/7, 모의 주행 실측은 MANUAL) | data-pipeline 6/8 (P1 D1~D6 완료, D7·D8은 P2)
 
 ## rust-core
 ### 데이터 팩·그래프 로딩
@@ -42,14 +42,14 @@ rust-core 12/12 | flutter-app 12/13 (F1~F11·F13 완료, F12는 P2 진행 중 �
 
 ### 출발지·목적지 지정 (2026-11-05 추가)
 - [x] F11 지도 탭 장소 식별 + 출발지·목적지 지정 + 전국 검색 반경 (의존: F2, F3, R9) [P1] — 완료조건: 지도 탭 → nearby_poi로 주변 장소 조회 → 시트에서 "여기로 가기"(경로 계획)·"출발지로 설정" 동작, 탭 지점 마커 표시, 검색 반경에 "전국" 추가, 출발지 지정 시 검색·경로 기준점이 바뀜 — 비고: 코어 `nearby_poi`(core/core `nearby_poi`, 테스트 3건)·FFI 추가(설계 2.2절 갱신), 앱 단위 테스트 신규 7건(`tapped_place_test`, `place_sheet_test`, `radius_choice_test`), 전체 52건 통과, analyze 0건. 실기기 탭 반응·마커 위치·출발지 칩 동작은 MANUAL. 전국 반경(1000km) 검색의 0.5초 KPI는 전국 팩에서 MANUAL(승인) 측정 필요
-- [ ] F12 경유지 입력 (의존: F12a~F12g) [P2] — 완료조건: 하위 F12a~F12g가 모두 [x]. 출발지·목적지 사이 경유지를 추가하면 구간별 plan_route를 이어 붙여 하나의 경로(polyline·안내)로 표시, 재탐색 시 경유 순서 유지 — 비고: 설계 design.md 7절(2026-11-05 보완). 코어·FFI 변경 없음, BLOCKED 없음(7.8). 코어 동작 계약은 design 2.2절. 차량(`car`)만 대상
+- [x] F12 경유지 입력 (의존: F12a~F12g) [P2] — 완료조건: 하위 F12a~F12g가 모두 [x]. 출발지·목적지 사이 경유지를 추가하면 구간별 plan_route를 이어 붙여 하나의 경로(polyline·안내)로 표시, 재탐색 시 경유 순서 유지 — 비고: 설계 design.md 7절(2026-11-05 보완). 코어·FFI 변경 없음, BLOCKED 없음(7.8). 코어 동작 계약은 design 2.2절. 차량(`car`)만 대상
   - [x] F12a 구간 결합 순수 함수 (의존: F11) [P2] — 완료조건: `lib/nav/trip.dart`에 `Stop`·상수 4개·`haversineM`·`dedupeStops`·`combineLegs`(design 7.1·7.2)가 있고 `test/nav/trip_test.dart`(이음점 1m 중복 제거, 거리·시간 합, 구간 1개 그대로, 20m 이내 지점 제거·순서 유지, 알려진 두 점 거리) 통과 — 비고(2026-11-05): 완료. trip_test 9건 통과, analyze 0건, flutter test 전체 통과
   - [x] F12b 경유지 문구 함수 (의존: 없음) [P2] — 완료조건: `instruction_text.dart`에 `waypointArrivalSpeech(n, nextIsDestination:)`가 design 7.6 두 문구를 정확히 반환하고 단위 테스트 2건 통과 — 비고(2026-11-05): 완료. 단위 테스트 2건 통과
   - [x] F12c 경유지 입력 UI·상태 (의존: F12a) [P2] — 완료조건: `AppServices.waypoints`(최대 3, 초과 시 스낵바), 장소 시트 "경유지로 추가"(`PlaceAction.addWaypoint`), 검색 결과 trailing 아이콘과 `SearchPick` pop 값, 홈 경유지 칩(×로 삭제)이 design 7.1대로 동작하고 시트·검색 위젯 테스트 통과 — 비고(2026-11-05): 완료. 홈 `_planTo`는 F12d에서 체인 계획으로 바꾼다(F12c 시점에는 목적지 단일 구간)
   - [x] F12d 체인 경로 계획 (의존: F12a, F12c) [P2] — 완료조건: `planTrip`이 겹친 지점을 뺀 구간을 역순으로 plan_route 호출하고 실패 시 `TripPlanException(legIndex)`를 던지며, 홈 `_planTo`가 이를 써서 `nav.startTrip`(기존 `startRoute` 삭제) 후 주행 화면으로 가고 실패 시 구간 이름 문구를 보여줌. 가짜 엔진 테스트로 호출 순서·실패 인덱스 확인, 경유지 0개 동작은 기존과 같음(기존 테스트 통과) — 비고(2026-11-05): 완료. `tripStops`(겹침 제거·목적지 하나 대체)를 함께 두고 `planTrip`은 그 결과로 계획한다. 가짜 엔진 테스트 8건(역순 호출·실패 인덱스·0개·겹침·문구) 포함 flutter test 79건 통과
   - [x] F12e 주행 중 구간 전환 (의존: F12b, F12d) [P2] — 완료조건: 컨트롤러가 중간 `Arrived`(판정 A)와 이탈+60m 이내(판정 B) 중 먼저 온 것 하나로 `_advanceLeg`를 실행(전환 중 위치 미전송, 경유지 문구 발화, 다음 구간 plan_route, 실패 시 경유지 기준 1회 재시도 후 notice·`_legFailed`), 새 구간 Depart 발화 억제, 마지막 `Arrived`만 `arrived=true`. 컨트롤러 테스트 design 7.9 (a)(b)(c)(d)(f) 통과 — 비고(2026-11-05): 완료. 판정 B 거리 60m는 활성 구간 끝 기준, 판정 A는 끝 근처 위치가 있을 때만 받음(옛 구간 늦은 신호 거름). 구간 전환 컨트롤러 테스트 8건 추가(design 7.9 a·b·c·d·f 포함), flutter test 87건 통과
   - [x] F12f 재탐색 경유 순서 유지 (의존: F12e) [P2] — 완료조건: `Rerouted`가 활성 구간만 교체해 `combineLegs([새 경로, 남은 구간])`로 표시하고, 전환 중이거나 끝점이 활성 구간 끝과 30m 넘게 다르면 버림. 컨트롤러 테스트 design 7.9 (e) 통과 — 비고(2026-11-05): 완료. 활성 구간 끝 기준 재탐색만 받음(끝점 30m 초과 또는 전환 중이면 버림). 재탐색 테스트 2건 추가(design 7.9 e), flutter test 전체 통과
-  - [ ] F12g 주행 화면 경유지 표시 (의존: F12d) [P2] — 완료조건: 하단 요약 `경유 m곳 남음 · 거리 · 시간`, `NaviMap.waypoints` 원 마커(#1565c0)가 홈·주행 화면에 연결되고 `flutter analyze` 0건·`flutter test` 전부 통과. 에뮬레이터 모의 주행(경유지 1곳)에서 경유지 도착 발화·다음 구간 안내·U턴 재탐색 없음을 로그/스크린샷으로 기록(실 GPS 주행은 MANUAL)
+  - [x] F12g 주행 화면 경유지 표시 (의존: F12d) [P2] — 완료조건: 하단 요약 `경유 m곳 남음 · 거리 · 시간`, `NaviMap.waypoints` 원 마커(#1565c0)가 홈·주행 화면에 연결되고 `flutter analyze` 0건·`flutter test` 전부 통과. 에뮬레이터 모의 주행(경유지 1곳)에서 경유지 도착 발화·다음 구간 안내·U턴 재탐색 없음을 로그/스크린샷으로 기록(실 GPS 주행은 MANUAL) — 비고(2026-11-05): 코드·테스트 완료(요약 `경유 m곳 남음 · 거리 · 시간`, 경유지 원 마커 #1565c0을 홈·주행에 연결, 남은 경유지 좌표 발행, 테스트 3건 추가). MANUAL: 에뮬레이터 모의 주행(경유지 1곳, 도착 발화·다음 구간 안내·U턴 없음)의 로그·스크린샷 기록은 이 환경에서 미수행. 팩 데이터(`data/`)·Android NDK·Rust 안드로이드 타깃이 없음. 실 GPS 주행도 MANUAL
 
 ### 지도 라벨 (2026-11-05 추가)
 - [x] F13 지도 도로명·POI 이름 라벨 + 글꼴 팩 (의존: F2, D5) [P1] — 완료조건: (a) 스타일에 도로명(roads, z14~, 선 따라)·POI 이름(poi, z14~) symbol 레이어가 있고 스타일 단위 테스트 통과, (b) 팩 `glyphs/NotoSansKR-Regular/{range}.pbf`를 스타일 `glyphs`(file://)가 가리키며 에뮬레이터에서 한글 라벨이 그려짐(스크린샷), (c) 글꼴 OFL 라이선스 문구를 출처 화면에 표기, (d) 글꼴 생성 스크립트를 pipeline/에 두고 manifest에 등록 — 비고(2026-11-05): 완료. 글꼴 PBF는 build_pbf_glyphs(cargo 설치판)로 Noto Sans KR Regular(SIL OFL 1.1, 글리프 22,862개)에서 생성, 256개 18MB(`data/work/glyph_out/`, 저장소 제외). 등록 스크립트 `pipeline/glyph/register_glyphs.py`가 PBF size·sha256을 manifest files에 `glyphs/NotoSansKR-Regular/<range>.pbf`로 추가(필수 3개 외 항목 허용을 Dart `PackManifest.parse`·Rust `Manifest::validate`에서 확인). 에뮬레이터(API 37) 확인: 전국 팩 `files/pack`의 mbtiles·graph·poi는 바꾸지 않고 glyphs 폴더와 manifest만 추가, `file://` 글꼴 로딩으로 줌 15에서 도로명(둔산로, 문정로)과 POI 이름(한국은행, 스타벅스, 대전시청) 한글 표시 확인(스크린샷 scratchpad/labels_z15_tempbuild.png). 확인 방법: 줌 15는 임시 빌드(kMapInitialZoom 15)로 보았고 커밋 코드는 12로 되돌려 재빌드함. 전국 팩 백업은 `data/work/backup_national_pack/pack.tar`(원본 manifest 포함). 미완료 후속: 팩 빌드 파이프라인 `pipeline/manifest.py`에 글꼴 등록이 없어 다음 전국 빌드에서는 글꼴이 빠짐(파일 3개는 기존 dirty 상태라 이번 커밋 제외).

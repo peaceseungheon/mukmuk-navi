@@ -55,4 +55,20 @@ void main() {
       '경유4',
     ]);
   });
+
+  test('지도용 경유지 좌표는 경유지 목록과 같이 바뀐다', () {
+    final services = _services();
+    addTearDown(services.dispose);
+
+    services.addWaypoint(_stop(1));
+    services.addWaypoint(_stop(2));
+    expect(services.waypointPoints.value, [_stop(1).point, _stop(2).point]);
+
+    services.removeWaypointAt(0);
+    expect(services.waypointPoints.value, [_stop(2).point]);
+
+    services.clearWaypoints();
+    expect(services.waypoints.value, isEmpty);
+    expect(services.waypointPoints.value, isEmpty);
+  });
 }
