@@ -22,9 +22,9 @@ Route _leg(
   totalDurationS: durationS,
 );
 
-void main() {
-  const origin = GeoPoint(lat: 36.35, lon: 127.38);
+const origin = GeoPoint(lat: 36.35, lon: 127.38);
 
+void main() {
   group('haversineM', () {
     test('위도 1도는 약 111.195km다', () {
       const a = GeoPoint(lat: 36, lon: 127);
@@ -108,6 +108,94 @@ void main() {
     test('구간이 1개면 그 구간을 그대로 돌려준다', () {
       final only = fakeRoute(const [origin, GeoPoint(lat: 36.36, lon: 127.38)]);
       expect(identical(combineLegs([only]), only), isTrue);
+    });
+  });
+
+  group('planTrip', () {
+    final w1 = Stop(name: '경유1', point: _northOf(origin, 1000));
+    final w2 = Stop(name: '경유2', point: _northOf(origin, 2000));
+    final dest = Stop(name: '목적지', point: _northOf(origin, 3000));
+
+    test('구간을 목적지 쪽부터 역순으로 계획하고 순서대로 돌려준다', () async {
+      final engine = FakeNaviEngine();
+      final legs = await planTrip(engine, origin, [w1, w2, dest]);
+
+      expect(engine.planCalls.map((c) => c.end).toList(), [
+        dest.point,
+        w2.point,
+        w1.point,
+      ]);
+      expect(engine.planCalls.map((c) => c.start).toList(), [
+        w2.point,
+        w1.point,
+        origin,
+      ]);
+      expect(legs.length, 3);
+      expect(legs.first.polyline.first, origin);
+      expect(legs.last.polyline.last, dest.point);
+    });
+
+    test('구간 계획이 실패하면 실패한 구간 번호를 담아 던지고 앞 구간은 계획하지 않는다', () async {
+      final engine = FakeNaviEngine()
+        ..planError = (start, end) =>
+            end == w2.point ? const EngineError.routingFailed('x') : null;
+
+      await expectLater(
+        planTrip(engine, origin, [w1, w2, dest]),
+        throwsA(
+          isA<TripPlanException>().having((e) => e.legIndex, 'legIndex', 1),
+        ),
+      );
+      expect(engine.planCalls.length, 2);
+    });
+
+    test('경유지가 없으면 출발지에서 목적지까지 한 구간만 계획한다', () async {
+      final engine = FakeNaviEngine();
+      final legs = await planTrip(engine, origin, [dest]);
+
+      expect(engine.planCalls.length, 1);
+      expect(legs.length, 1);
+    });
+
+    test('출발지와 겹친 경유지는 계획에서 빼고 목적지만 계획한다', () async {
+      final engine = FakeNaviEngine();
+      final near = Stop(name: '근처', point: _northOf(origin, 10));
+      final legs = await planTrip(engine, origin, [near, dest]);
+
+      expect(engine.planCalls.map((c) => c.end).toList(), [dest.point]);
+      expect(legs.length, 1);
+    });
+
+    test('목적지가 출발지와 겹치면 목적지 하나로 계획한다', () async {
+      final engine = FakeNaviEngine();
+      final closeDest = Stop(name: '가까운 목적지', point: _northOf(origin, 5));
+      final legs = await planTrip(engine, origin, [closeDest]);
+
+      expect(engine.planCalls.single.end, closeDest.point);
+      expect(legs.length, 1);
+    });
+  });
+
+  group('구간 실패 문구', () {
+    test('경유지가 있으면 구간 이름을 붙여 알려준다', () {
+      final text = tripFailureText(
+        TripPlanException(0, const EngineError.routingFailed('x')),
+        3,
+      );
+      expect(text, '출발지 → 경유 1 구간 경로를 찾지 못했습니다. 경로를 찾지 못했습니다.');
+    });
+
+    test('경유지가 없으면 기존 오류 문구만 보여준다', () {
+      final text = tripFailureText(
+        TripPlanException(0, const EngineError.routingFailed('x')),
+        1,
+      );
+      expect(text, '경로를 찾지 못했습니다.');
+    });
+
+    test('마지막 구간의 끝은 목적지로 표시한다', () {
+      expect(legLabel(2, 3), '경유 2 → 목적지');
+      expect(legLabel(1, 3), '경유 1 → 경유 2');
     });
   });
 }

@@ -6,6 +6,7 @@ import 'package:mukmuk_app/engine/engine_error_text.dart';
 import 'package:mukmuk_app/engine/navi_engine.dart';
 import 'package:mukmuk_app/ffibindings/api/types.dart';
 import 'package:mukmuk_app/nav/position_source.dart';
+import 'package:mukmuk_app/nav/trip.dart';
 import 'package:mukmuk_app/tts/instruction_text.dart';
 import 'package:mukmuk_app/tts/tts_speaker.dart';
 
@@ -28,6 +29,9 @@ class NavigationController {
   final ValueNotifier<bool> offRoute = ValueNotifier(false);
   final ValueNotifier<bool> arrived = ValueNotifier(false);
 
+  /// 활성 구간 번호(0부터). 0이면 첫 구간을 안내 중이다.
+  final ValueNotifier<int> activeLeg = ValueNotifier(0);
+
   /// 사용자에게 한 번 보여줄 오류 문구. 소비 후 화면이 null로 되돌린다.
   final ValueNotifier<String?> notice = ValueNotifier(null);
 
@@ -48,7 +52,12 @@ class NavigationController {
     }
   }
 
-  void startRoute(Route next) {
+  /// 체인 경로 시작. [legs]는 [stops] 순서의 구간 경로다(legs[i]: 직전 지점 → stops[i]).
+  /// 화면에는 구간을 이어 붙인 경로를 보여준다.
+  void startTrip(List<Stop> stops, List<Route> legs) {
+    assert(stops.length == legs.length, '지점 수와 구간 수가 같아야 한다');
+    activeLeg.value = 0;
+    final next = combineLegs(legs);
     route.value = next;
     instruction.value = null;
     offRoute.value = false;
@@ -111,6 +120,7 @@ class NavigationController {
     instruction.dispose();
     offRoute.dispose();
     arrived.dispose();
+    activeLeg.dispose();
     notice.dispose();
   }
 }

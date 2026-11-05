@@ -5,6 +5,7 @@ import 'package:mukmuk_app/config.dart';
 import 'package:mukmuk_app/ffibindings/api/types.dart';
 import 'package:mukmuk_app/nav/navigation_controller.dart';
 import 'package:mukmuk_app/nav/position_source.dart';
+import 'package:mukmuk_app/nav/trip.dart';
 
 import '../support/fakes.dart';
 
@@ -23,6 +24,11 @@ RawFix _fix({int tMs = 0}) => RawFix(
 );
 
 Future<void> _settle() => Future<void>.delayed(Duration.zero);
+
+/// 구간 1개짜리 여정으로 시작한다(경유지 없는 기존 동작과 같다).
+void startSingleLeg(NavigationController nav, Route route) {
+  nav.startTrip([Stop(name: '목적지', point: route.polyline.last)], [route]);
+}
 
 void main() {
   late FakeNaviEngine engine;
@@ -50,7 +56,7 @@ void main() {
 
   test('Rerouted 이벤트는 경로를 즉시 교체하고 이탈 표시를 끈다', () async {
     await nav.ensureSubscribed();
-    nav.startRoute(fakeRoute(const [GeoPoint(lat: 1, lon: 1)]));
+    startSingleLeg(nav, fakeRoute(const [GeoPoint(lat: 1, lon: 1)]));
     nav.offRoute.value = true;
 
     final next = fakeRoute(const [
@@ -82,7 +88,7 @@ void main() {
   });
 
   test('10Hz 상한: 100ms 안의 연속 위치는 엔진에 전달되지 않는다', () async {
-    nav.startRoute(fakeRoute(const [GeoPoint(lat: 1, lon: 1)]));
+    startSingleLeg(nav, fakeRoute(const [GeoPoint(lat: 1, lon: 1)]));
 
     await nav.onFix(_fix());
     await nav.onFix(_fix());
@@ -101,7 +107,7 @@ void main() {
   });
 
   test('이전 update_position이 끝나지 않았으면 새 위치는 버린다', () async {
-    nav.startRoute(fakeRoute(const [GeoPoint(lat: 1, lon: 1)]));
+    startSingleLeg(nav, fakeRoute(const [GeoPoint(lat: 1, lon: 1)]));
     engine.updateGate = Completer<void>();
 
     final first = nav.onFix(_fix());
@@ -114,7 +120,7 @@ void main() {
   });
 
   test('스냅 결과는 위치와 이탈 플래그에 반영된다', () async {
-    nav.startRoute(fakeRoute(const [GeoPoint(lat: 1, lon: 1)]));
+    startSingleLeg(nav, fakeRoute(const [GeoPoint(lat: 1, lon: 1)]));
     engine.onUpdate = (pos) => SnappedPosition(
       point: const GeoPoint(lat: 36.351, lon: 127.381),
       roadId: BigInt.one,
@@ -128,7 +134,7 @@ void main() {
   });
 
   test('update_position 실패는 사용자 문구로 notice에 올린다', () async {
-    nav.startRoute(fakeRoute(const [GeoPoint(lat: 1, lon: 1)]));
+    startSingleLeg(nav, fakeRoute(const [GeoPoint(lat: 1, lon: 1)]));
     engine.updateError = const EngineError.routingFailed('x');
 
     await nav.onFix(_fix());

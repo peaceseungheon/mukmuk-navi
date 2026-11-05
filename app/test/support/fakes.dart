@@ -15,6 +15,12 @@ class FakeNaviEngine implements NaviEngine {
   final List<GeoPoint> nearbyCalls = [];
   SnappedPosition Function(GeoPoint pos)? onUpdate;
   Object? updateError;
+
+  /// plan_route 호출 기록(호출 순서대로). 구간 체인 테스트에서 역순 호출을 확인한다.
+  final List<({GeoPoint start, GeoPoint end})> planCalls = [];
+
+  /// 특정 구간 질의에 실패를 주입한다. null을 돌려주면 성공.
+  Object? Function(GeoPoint start, GeoPoint end)? planError;
   int subscribeCount = 0;
   Completer<void>? updateGate;
 
@@ -44,7 +50,12 @@ class FakeNaviEngine implements NaviEngine {
     required GeoPoint start,
     required GeoPoint end,
     required TravelProfile profile,
-  }) async => fakeRoute([start, end]);
+  }) async {
+    planCalls.add((start: start, end: end));
+    final error = planError?.call(start, end);
+    if (error != null) throw error;
+    return fakeRoute([start, end]);
+  }
 
   @override
   Stream<NavigationEvent> subscribe() {

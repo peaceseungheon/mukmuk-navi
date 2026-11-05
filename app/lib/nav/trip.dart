@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:mukmuk_app/engine/engine_error_text.dart';
+import 'package:mukmuk_app/engine/navi_engine.dart';
 import 'package:mukmuk_app/ffibindings/api/types.dart';
 
 /// 경로의 한 지점(경유지 또는 목적지).
@@ -70,4 +72,57 @@ Route combineLegs(List<Route> legs) {
     totalDistanceM: distanceM,
     totalDurationS: durationS,
   );
+}
+
+/// 구간 계획 실패. [legIndex]는 실패한 구간 번호(0부터, 구간 k = 지점 k-1 → 지점 k).
+final class TripPlanException implements Exception {
+  const TripPlanException(this.legIndex, this.cause);
+
+  final int legIndex;
+  final Object cause;
+}
+
+/// 겹친 지점을 뺀 지점 목록. 결과가 비면(목적지가 출발점과 겹침) 목적지 하나만 남긴다.
+List<Stop> tripStops(GeoPoint origin, List<Stop> raw) {
+  assert(raw.isNotEmpty, '목적지는 항상 마지막 항목으로 들어와야 한다');
+  final stops = dedupeStops(origin, raw);
+  return stops.isEmpty ? [raw.last] : stops;
+}
+
+/// 체인 경로 계획. 구간을 목적지 쪽부터(역순으로) plan_route 호출한다.
+/// 코어는 마지막 성공 호출의 경로를 현재 경로로 삼으므로 구간 0이 활성 구간이 된다(design 2.2절 계약 1).
+Future<List<Route>> planTrip(
+  NaviEngine engine,
+  GeoPoint origin,
+  List<Stop> raw,
+) async {
+  final stops = tripStops(origin, raw);
+  final legs = List<Route?>.filled(stops.length, null);
+  for (var i = stops.length - 1; i >= 0; i--) {
+    final start = i == 0 ? origin : stops[i - 1].point;
+    try {
+      legs[i] = await engine.planRoute(
+        start: start,
+        end: stops[i].point,
+        profile: TravelProfile.car,
+      );
+    } catch (e) {
+      throw TripPlanException(i, e);
+    }
+  }
+  return [for (final leg in legs) leg!];
+}
+
+/// 구간 이름. 예: `출발지 → 경유 1`, `경유 1 → 목적지`. [stopCount]는 겹침 제거 후 지점 수(목적지 포함).
+String legLabel(int legIndex, int stopCount) {
+  final from = legIndex == 0 ? '출발지' : '경유 $legIndex';
+  final to = legIndex == stopCount - 1 ? '목적지' : '경유 ${legIndex + 1}';
+  return '$from → $to';
+}
+
+/// 구간 계획 실패 문구. 경유지가 없으면 기존 오류 문구와 같다.
+String tripFailureText(TripPlanException e, int stopCount) {
+  if (stopCount == 1) return engineErrorText(e.cause);
+  return '${legLabel(e.legIndex, stopCount)} 구간 경로를 찾지 못했습니다. '
+      '${engineErrorText(e.cause)}';
 }

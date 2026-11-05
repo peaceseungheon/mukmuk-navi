@@ -105,16 +105,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// 경유지(있으면)와 목적지로 구간 경로를 계획하고 주행 화면으로 간다.
   Future<void> _planTo(PoiResult poi) async {
     setState(() => _planning = true);
+    final origin = _s.origin;
+    final raw = [..._s.waypoints.value, Stop(name: poi.name, point: poi.point)];
     try {
-      final route = await _s.engine.planRoute(
-        start: _s.origin,
-        end: poi.point,
-        profile: TravelProfile.car,
-      );
+      final stops = tripStops(origin, raw);
+      final legs = await planTrip(_s.engine, origin, raw);
       if (!mounted) return;
-      _s.nav.startRoute(route);
+      _s.nav.startTrip(stops, legs);
       setState(() => _planning = false);
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -123,6 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       _s.nav.clearRoute();
       _s.waypoints.value = const [];
+    } on TripPlanException catch (e) {
+      if (!mounted) return;
+      _showMessage(tripFailureText(e, tripStops(origin, raw).length));
     } catch (e) {
       if (!mounted) return;
       _showMessage(engineErrorText(e));
