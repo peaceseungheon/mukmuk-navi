@@ -58,6 +58,13 @@ final class AppServices {
   }
 }
 
+/// 사용할 수 있는 팩이 없지만 [kPackUrl]이 있어 내려받을 수 있는 상태.
+class PackMissingException implements Exception {
+  const PackMissingException(this.supportDir);
+
+  final Directory supportDir;
+}
+
 Future<AppServices> bootServices() async {
   const engine = FrbNaviEngine();
   Directory? supportDir;
@@ -75,13 +82,19 @@ Future<AppServices> bootServices() async {
     }
   }
   if (info == null) {
-    if (kPackDir.isEmpty) {
-      throw StateError(
-        'MUKMUK_PACK_DIR가 설정되지 않았습니다. --dart-define으로 팩 경로를 주세요.',
-      );
+    try {
+      if (kPackDir.isEmpty) {
+        throw StateError(
+          'MUKMUK_PACK_DIR가 설정되지 않았습니다. --dart-define으로 팩 경로를 주세요.',
+        );
+      }
+      info = await engine.init(kPackDir);
+      packDir = kPackDir;
+    } catch (_) {
+      // 팩이 없고 내려받을 주소가 있으면 첫 실행 다운로드 화면으로 넘긴다.
+      if (supportDir != null) throw PackMissingException(supportDir);
+      rethrow;
     }
-    info = await engine.init(kPackDir);
-    packDir = kPackDir;
   }
 
   final tts = FlutterTtsSpeaker();
