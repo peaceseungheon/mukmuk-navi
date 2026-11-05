@@ -16,7 +16,15 @@ const List<double> kRadiusChoicesKm = [
 String radiusChoiceLabel(double km) =>
     km == kNationwideSearchRadiusKm ? '전국' : '${km.round()}km';
 
-/// 장소/주소 검색. 결과를 고르면 해당 PoiResult를 pop으로 돌려준다.
+/// 검색 결과 선택. 타일 탭은 목적지([asWaypoint] false), 아이콘은 경유지 추가([asWaypoint] true).
+final class SearchPick {
+  const SearchPick({required this.poi, required this.asWaypoint});
+
+  final PoiResult poi;
+  final bool asWaypoint;
+}
+
+/// 장소/주소 검색. 결과를 고르면 [SearchPick]을 pop으로 돌려준다.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key, required this.services});
 
@@ -136,8 +144,22 @@ class _SearchScreenState extends State<SearchScreen> {
           subtitle: Text(
             [poi.category, if (poi.addr != null) poi.addr!].join(' · '),
           ),
-          trailing: Text(formatDistanceM(poi.distanceM)),
-          onTap: () => Navigator.of(context).pop(poi),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(formatDistanceM(poi.distanceM)),
+              IconButton(
+                icon: const Icon(Icons.add_location_alt),
+                tooltip: '경유지로 추가',
+                onPressed: () =>
+                    Navigator.of(context)
+                        .pop(SearchPick(poi: poi, asWaypoint: true)),
+              ),
+            ],
+          ),
+          onTap: () =>
+              Navigator.of(context)
+                  .pop(SearchPick(poi: poi, asWaypoint: false)),
         );
       },
     );

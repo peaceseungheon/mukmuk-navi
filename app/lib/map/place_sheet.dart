@@ -3,7 +3,7 @@ import 'package:mukmuk_app/format.dart';
 import 'package:mukmuk_app/map/tapped_place.dart';
 
 /// 장소 시트에서 고른 동작.
-enum PlaceAction { goHere, setOrigin }
+enum PlaceAction { goHere, addWaypoint, setOrigin }
 
 /// 탭한 지점 정보를 보여주고 동작을 고르게 한다. 닫으면 null.
 Future<PlaceAction?> showPlaceSheet(BuildContext context, TappedPlace place) {
@@ -51,7 +51,13 @@ class PlaceSheet extends StatelessWidget {
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () =>
-                  Navigator.of(context).pop(PlaceAction.setOrigin),
+                  Navigator.of(context).pop(PlaceAction.addWaypoint),
+              icon: const Icon(Icons.add_location_alt),
+              label: const Text('경유지로 추가'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).pop(PlaceAction.setOrigin),
               icon: const Icon(Icons.trip_origin),
               label: const Text('출발지로 설정'),
             ),

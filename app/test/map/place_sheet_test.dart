@@ -46,6 +46,11 @@ void main() {
     expect(action, PlaceAction.goHere);
   });
 
+  testWidgets('경유지로 추가를 누르면 addWaypoint를 돌려준다', (tester) async {
+    final action = await openAndTap(tester, named(), '경유지로 추가');
+    expect(action, PlaceAction.addWaypoint);
+  });
+
   testWidgets('출발지로 설정을 누르면 setOrigin을 돌려준다', (tester) async {
     final action = await openAndTap(tester, named(), '출발지로 설정');
     expect(action, PlaceAction.setOrigin);
@@ -57,7 +62,9 @@ void main() {
       point: GeoPoint(lat: 36.35, lon: 127.38),
     );
     await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: PlaceSheet(place: tap))),
+      const MaterialApp(
+        home: Scaffold(body: PlaceSheet(place: tap)),
+      ),
     );
 
     expect(find.text('주변 장소 없음'), findsOneWidget);
