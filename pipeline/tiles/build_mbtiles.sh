@@ -46,9 +46,12 @@ done
 [[ ${#ARGS[@]} -gt 0 ]] || die "레이어 GeoJSON 없음: $LAYER_DIR (osm_extract.sh 먼저 실행)"
 
 mkdir -p "$(dirname "$OUT")"
+# --drop-densest-as-needed: 타일이 피처 수(200000)/크기(500KB) 한도를 넘는 곳에서만 가장 조밀한 피처부터 덜어낸다.
+# 전국 저줌(z6) 타일이 한도를 넘어 실패하던 문제 대응. 한도 안인 타일(대부분의 z13 도로·POI)은 그대로 둔다.
 tippecanoe -o "$OUT" --force \
   -Z"$MINZOOM" -z"$MAXZOOM" \
   --name="$NAME" \
+  --drop-densest-as-needed \
   --attribution="© OpenStreetMap contributors" \
   "${ARGS[@]}"
 
