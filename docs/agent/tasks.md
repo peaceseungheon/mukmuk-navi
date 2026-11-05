@@ -40,6 +40,10 @@ rust-core 12/12 | flutter-app 9/10 (P1 F1~F7·F9·F10 완료, F8은 P2 미착수
 - [x] F2 MapLibre 지도 + mbtiles 렌더·pan/zoom (의존: D3) [P1] — 완료조건: 대전 mbtiles를 소스로 지도 렌더·pan/zoom 동작, 무거운 연산이 Dart에 없음(정적 확인) — 비고: 스타일(`lib/map/mbtiles_style.dart`)·지도 위젯(`lib/map/navi_map.dart`) 코드 완료, 무거운 연산 없음(정적 확인). 실 렌더·pan/zoom은 MANUAL(실기기, Android 라이선스 미동의). `mbtiles://` 절대경로 로딩은 MapLibre Android에서 미검증
 - [x] F3 검색 UI + 결과 목록 (의존: R10, D2) [P1] — 완료조건: 검색어→search_poi 호출→거리순 결과 표시, 반경 필터 동작 — 비고: 위젯 테스트(가짜 엔진)로 검증. 실 FFI 호출·반경 필터 실측은 MANUAL(실기기)
 
+### 출발지·목적지 지정 (2026-11-05 추가)
+- [x] F11 지도 탭 장소 식별 + 출발지·목적지 지정 + 전국 검색 반경 (의존: F2, F3, R9) [P1] — 완료조건: 지도 탭 → nearby_poi로 주변 장소 조회 → 시트에서 "여기로 가기"(경로 계획)·"출발지로 설정" 동작, 탭 지점 마커 표시, 검색 반경에 "전국" 추가, 출발지 지정 시 검색·경로 기준점이 바뀜 — 비고: 코어 `nearby_poi`(core/core `nearby_poi`, 테스트 3건)·FFI 추가(설계 2.2절 갱신), 앱 단위 테스트 신규 7건(`tapped_place_test`, `place_sheet_test`, `radius_choice_test`), 전체 52건 통과, analyze 0건. 실기기 탭 반응·마커 위치·출발지 칩 동작은 MANUAL. 전국 반경(1000km) 검색의 0.5초 KPI는 전국 팩에서 MANUAL(승인) 측정 필요
+- [ ] F12 경유지 입력 (의존: F11) [P2] — 완료조건: 출발지·목적지 사이 경유지를 추가하면 구간별 plan_route를 이어 붙여 하나의 경로(polyline·안내)로 표시, 재탐색 시 경유 순서 유지 — 비고: 2026-11-05 사용자 결정으로 추후 진행. 코어 변경 없이 앱에서 구간 계획을 체인하는 방식을 우선 검토. 주행 중 재탐색·TBT의 구간 경계 처리 설계 필요
+
 ### 길 안내
 - [x] F4 경로 표시 + TBT 안내 UI (의존: R10, F2) [P1] — 완료조건: plan_route 호출→polyline·스텝 렌더, 매뉴버 아이콘 표시 — 비고: 매뉴버 아이콘·문구는 단위 테스트로 전 변형 확인. 경로 선 렌더와 실 plan_route는 MANUAL(실기기)
 - [x] F5 위치 갱신 위젯(맵매칭 스냅 반영) (의존: R10, F2) [P1] — 완료조건: 모의 위치로 update_position 호출, 스냅 위치를 최소 범위 위젯만 갱신(코드 리뷰) — 비고: 모의 주행 소스·10Hz 쓰로틀·스냅 반영을 단위 테스트로 확인. 위치 갱신은 GeoJSON 소스만 변경(부모 setState 없음). 실 주행 체감 확인은 MANUAL

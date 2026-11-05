@@ -32,7 +32,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
     route: _nav.route,
     position: _nav.position,
     followPosition: true,
+    tapMarker: _noTapMarker,
   );
+
+  /// 주행 화면은 지도 탭을 쓰지 않으므로 항상 null인 마커를 준다.
+  static final ValueNotifier<GeoPoint?> _noTapMarker = ValueNotifier(null);
   StreamSubscription<RawFix>? _fixSub;
   bool _simulate = false;
 

@@ -207,6 +207,15 @@ impl Engine {
         search::search_poi(&self.poi_path, query, center, radius_km, limit)
     }
 
+    pub fn nearby(
+        &self,
+        center: GeoPoint,
+        radius_km: f64,
+        limit: u32,
+    ) -> Result<Vec<PoiResult>, EngineError> {
+        search::nearby_poi(&self.poi_path, center, radius_km, limit)
+    }
+
     /// 라우팅 워커에서 직렬 실행. 성공 시 현재 경로로 등록된다.
     pub fn plan_route(
         &self,

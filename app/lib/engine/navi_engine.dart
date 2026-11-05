@@ -12,6 +12,13 @@ abstract interface class NaviEngine {
     required int limit,
   });
 
+  /// 지도 탭 지점 주변 장소(거리순). 설계 2.2절에 추가된 계약이다.
+  Future<List<PoiResult>> nearbyPoi({
+    required GeoPoint center,
+    required double radiusKm,
+    required int limit,
+  });
+
   Future<Route> planRoute({
     required GeoPoint start,
     required GeoPoint end,
@@ -48,6 +55,13 @@ final class FrbNaviEngine implements NaviEngine {
     radiusKm: radiusKm,
     limit: limit,
   );
+
+  @override
+  Future<List<PoiResult>> nearbyPoi({
+    required GeoPoint center,
+    required double radiusKm,
+    required int limit,
+  }) => ffi.nearbyPoi(center: center, radiusKm: radiusKm, limit: limit);
 
   @override
   Future<Route> planRoute({

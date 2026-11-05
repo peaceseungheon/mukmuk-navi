@@ -45,12 +45,18 @@ final class AppServices {
   /// 위치 서비스 꺼짐·권한 거부 등 홈 화면이 한 번 보여줄 안내. 소비 후 null로 되돌린다.
   final ValueNotifier<String?> gpsNotice = ValueNotifier(null);
 
+  /// 지도 탭으로 사용자가 지정한 출발지. null이면 GPS 위치를 쓴다.
+  final ValueNotifier<GeoPoint?> pickedOrigin = ValueNotifier(null);
+
+  /// 경로·검색 기준점: 지정한 출발지 → GPS 위치 → 기본값(대전 시청) 순서.
   GeoPoint get origin =>
+      pickedOrigin.value ??
       lastGps.value ??
       const GeoPoint(lat: kDefaultOriginLat, lon: kDefaultOriginLon);
 
   Future<void> dispose() async {
     await _gpsSub?.cancel();
+    pickedOrigin.dispose();
     lastGps.dispose();
     gpsNotice.dispose();
     packUpdate?.dispose();
