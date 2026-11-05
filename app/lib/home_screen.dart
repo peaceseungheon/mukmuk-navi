@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart' hide Route;
 import 'package:mukmuk_app/app_services.dart';
-import 'package:mukmuk_app/config.dart';
 import 'package:mukmuk_app/engine/engine_error_text.dart';
 import 'package:mukmuk_app/ffibindings/api/types.dart';
 import 'package:mukmuk_app/map/mbtiles_style.dart';
 import 'package:mukmuk_app/map/navi_map.dart';
 import 'package:mukmuk_app/nav/navigation_screen.dart';
+import 'package:mukmuk_app/packs/pack_update_banner.dart';
 import 'package:mukmuk_app/search/search_screen.dart';
 import 'package:mukmuk_app/tts/tts_install_banner.dart';
 
@@ -23,7 +23,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final Widget _map = NaviMap(
-    styleString: buildMbtilesStyle('$kPackDir/map/korea.mbtiles'),
+    styleString: buildMbtilesStyle(
+      '${widget.services.packDir}/map/korea.mbtiles',
+    ),
     route: widget.services.nav.route,
     position: widget.services.nav.position,
   );
@@ -36,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _s.gpsNotice.addListener(_onGpsNotice);
     WidgetsBinding.instance.addPostFrameCallback((_) => _onGpsNotice());
+    _s.packUpdate?.check();
   }
 
   @override
@@ -131,6 +134,13 @@ class _HomeScreenState extends State<HomeScreen> {
             top: MediaQuery.paddingOf(context).top + 84,
             child: TtsInstallBanner(ttsAvailable: _s.ttsAvailable),
           ),
+          if (_s.packUpdate case final pu?)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 44,
+              child: PackUpdateBanner(controller: pu),
+            ),
           Positioned(
             left: 16,
             bottom: 16,

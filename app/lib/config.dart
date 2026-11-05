@@ -1,6 +1,9 @@
 /// 앱 상수. 팩 경로는 빌드 시 `--dart-define=MUKMUK_PACK_DIR=<팩 디렉터리>`로 주입한다.
 const String kPackDir = String.fromEnvironment('MUKMUK_PACK_DIR');
 
+/// 데이터 팩 서버 주소(`--dart-define=MUKMUK_PACK_URL=https://.../`). 비어 있으면 업데이트 기능을 숨긴다.
+const String kPackUrl = String.fromEnvironment('MUKMUK_PACK_URL');
+
 /// 검색 기본 반경(design.md 6절 2번: KPI 50km 기준으로 기본값 확정 전까지 50km).
 const double kDefaultSearchRadiusKm = 50;
 

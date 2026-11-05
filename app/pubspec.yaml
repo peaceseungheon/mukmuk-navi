@@ -41,6 +41,10 @@ dependencies:
   geolocator: ^14.1.2
   rust_lib_mukmuk:
     path: rust_builder
+  http: ^1.6.0
+  crypto: ^3.0.8
+  path_provider: ^2.1.6
+  connectivity_plus: ^7.3.1
 
 dev_dependencies:
   flutter_test:
