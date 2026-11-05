@@ -5,8 +5,16 @@ import 'package:mukmuk_app/engine/engine_error_text.dart';
 import 'package:mukmuk_app/ffibindings/api/types.dart';
 import 'package:mukmuk_app/format.dart';
 
-/// 선택지는 design.md 6절 2번(기본 50km, UI에서 조절)에 따른다.
-const List<double> kRadiusChoicesKm = [5, 10, kDefaultSearchRadiusKm];
+/// 선택지는 design.md 6절 2번(기본 50km, UI에서 조절)에 따르고, "전국"을 더한다.
+const List<double> kRadiusChoicesKm = [
+  5,
+  10,
+  kDefaultSearchRadiusKm,
+  kNationwideSearchRadiusKm,
+];
+
+String radiusChoiceLabel(double km) =>
+    km == kNationwideSearchRadiusKm ? '전국' : '${km.round()}km';
 
 /// 장소/주소 검색. 결과를 고르면 해당 PoiResult를 pop으로 돌려준다.
 class SearchScreen extends StatefulWidget {
@@ -94,7 +102,7 @@ class _SearchScreenState extends State<SearchScreen> {
               children: [
                 for (final km in kRadiusChoicesKm)
                   ChoiceChip(
-                    label: Text('${km.round()}km'),
+                    label: Text(radiusChoiceLabel(km)),
                     selected: _radiusKm == km,
                     onSelected: _busy ? null : (_) => _setRadius(km),
                   ),

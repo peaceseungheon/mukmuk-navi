@@ -11,6 +11,8 @@ class FakeNaviEngine implements NaviEngine {
 
   final List<({double speed, double heading, int tMs})> positionCalls = [];
   final List<PoiResult> poiResults = [];
+  final List<PoiResult> nearbyResults = [];
+  final List<GeoPoint> nearbyCalls = [];
   SnappedPosition Function(GeoPoint pos)? onUpdate;
   Object? updateError;
   int subscribeCount = 0;
@@ -26,6 +28,16 @@ class FakeNaviEngine implements NaviEngine {
     required double radiusKm,
     required int limit,
   }) async => poiResults;
+
+  @override
+  Future<List<PoiResult>> nearbyPoi({
+    required GeoPoint center,
+    required double radiusKm,
+    required int limit,
+  }) async {
+    nearbyCalls.add(center);
+    return nearbyResults;
+  }
 
   @override
   Future<Route> planRoute({
