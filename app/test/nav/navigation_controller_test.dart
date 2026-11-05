@@ -59,9 +59,10 @@ void main() {
     startSingleLeg(nav, fakeRoute(const [GeoPoint(lat: 1, lon: 1)]));
     nav.offRoute.value = true;
 
+    // 재탐색은 같은 목적지(구간 끝)로 끝난다.
     final next = fakeRoute(const [
       GeoPoint(lat: 2, lon: 2),
-      GeoPoint(lat: 3, lon: 3),
+      GeoPoint(lat: 1, lon: 1),
     ]);
     engine.events.add(NavigationEvent.rerouted(next));
     await _settle();
@@ -281,6 +282,75 @@ void main() {
       engine.events.add(const NavigationEvent.arrived());
       await _settle();
       expect(engine.planCalls.length, 2);
+    });
+  });
+
+  group('재탐색과 경유 순서', () {
+    const origin = GeoPoint(lat: 36.35, lon: 127.38);
+    const w1 = GeoPoint(lat: 36.355, lon: 127.38);
+    const w2 = GeoPoint(lat: 36.36, lon: 127.38);
+    const dest = GeoPoint(lat: 36.37, lon: 127.38);
+
+    Future<void> startThreeLegs() async {
+      await nav.ensureSubscribed();
+      nav.startTrip(
+        const [
+          Stop(name: '경유1', point: w1),
+          Stop(name: '경유2', point: w2),
+          Stop(name: '목적지', point: dest),
+        ],
+        [
+          fakeRoute(const [origin, w1]),
+          fakeRoute(const [w1, w2]),
+          fakeRoute(const [w2, dest]),
+        ],
+      );
+    }
+
+    test('끝점이 활성 구간 끝에서 30m를 넘게 어긋난 재탐색은 버린다', () async {
+      await nav.ensureSubscribed();
+      nav.startTrip(
+        const [Stop(name: '경유1', point: w1), Stop(name: '목적지', point: dest)],
+        [
+          fakeRoute(const [origin, w1]),
+          fakeRoute(const [w1, dest]),
+        ],
+      );
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+      final before = nav.route.value;
+      nav.offRoute.value = true;
+
+      // 옛 구간(출발 → 경유1) 기준 재탐색: 끝점이 활성 구간(→ 목적지)의 끝과 멀다.
+      engine.events.add(
+        NavigationEvent.rerouted(fakeRoute(const [origin, w1])),
+      );
+      await _settle();
+
+      expect(nav.route.value, same(before));
+      expect(nav.offRoute.value, isTrue);
+    });
+
+    test('재탐색은 활성 구간만 바꾸고 남은 구간과 이어 보여준다', () async {
+      await startThreeLegs();
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+      expect(nav.activeLeg.value, 1);
+
+      const midway = GeoPoint(lat: 36.357, lon: 127.38);
+      final rerouted = Route(
+        polyline: const [midway, w2],
+        steps: const [],
+        totalDistanceM: 500,
+        totalDurationS: 60,
+      );
+      engine.events.add(NavigationEvent.rerouted(rerouted));
+      await _settle();
+
+      // 활성 구간(재탐색 500m) + 남은 구간(fakeRoute 1200m).
+      expect(nav.route.value?.totalDistanceM, closeTo(1700, 1e-9));
+      expect(nav.route.value?.polyline.last, dest);
+      expect(nav.offRoute.value, isFalse);
     });
   });
 }

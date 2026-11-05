@@ -137,8 +137,11 @@ class NavigationController {
   void _onEvent(NavigationEvent event) {
     switch (event) {
       case NavigationEvent_Rerouted(field0: final next):
-        route.value = next;
-        offRoute.value = false;
+        if (_acceptsReroute(next)) {
+          _legs[activeLeg.value] = next;
+          _refreshRoute();
+          offRoute.value = false;
+        }
       case NavigationEvent_Instruction(field0: final step):
         instruction.value = step;
         final muted = _suppressDepartSpeech && step.maneuver == Maneuver.depart;
@@ -219,6 +222,17 @@ class NavigationController {
   bool get _hasNextLeg => activeLeg.value < _legs.length - 1;
 
   bool get _canSwitch => _hasNextLeg && !_switching && !_legFailed;
+
+  /// 재탐색 결과는 활성 구간의 끝으로 가는 경로일 때만 받는다. 전환 중이거나 끝점이 어긋나면
+  /// 전환 전 구간을 기준으로 한 오래된 결과이므로 버린다(design 7.5).
+  bool _acceptsReroute(Route next) {
+    if (_switching || _legs.isEmpty) return false;
+    final current = _legs[activeLeg.value].polyline;
+    final fresh = next.polyline;
+    return current.isNotEmpty &&
+        fresh.isNotEmpty &&
+        haversineM(fresh.last, current.last) <= kStaleRerouteToleranceM;
+  }
 
   bool _nearActiveEnd(GeoPoint p) {
     final end = _legs[activeLeg.value].polyline;
