@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 const osmCopyrightUrl = 'https://www.openstreetmap.org/copyright';
 const odblUrl = 'https://opendatacommons.org/licenses/odbl/1-0/';
+const oflUrl = 'https://openfontlicense.org';
 
 /// ODbL 4.3 / OSM 가이드 출처 표기. 링크 패키지 없이 전체 URL을 텍스트로 보인다.
 class AttributionDialog extends StatelessWidget {
@@ -28,6 +29,9 @@ class AttributionDialog extends StatelessWidget {
             SelectableText(odblUrl),
             SizedBox(height: 12),
             Text('데이터 팩은 OpenStreetMap 데이터에서 파생되었습니다.'),
+            SizedBox(height: 12),
+            SelectableText('지도 글꼴: Noto Sans KR © Google, SIL Open Font License 1.1'),
+            SelectableText(oflUrl),
           ],
         ),
       ),

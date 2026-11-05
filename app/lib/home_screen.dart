@@ -27,9 +27,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final Widget _map = NaviMap(
-    styleString: buildMbtilesStyle(
-      '${widget.services.packDir}/map/korea.mbtiles',
-    ),
+    styleString: buildMbtilesStyle(packDir: widget.services.packDir),
     route: widget.services.nav.route,
     position: widget.services.nav.position,
     tapMarker: _tapMarker,

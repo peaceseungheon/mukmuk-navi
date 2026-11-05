@@ -28,7 +28,7 @@ class NavigationScreen extends StatefulWidget {
 
 class _NavigationScreenState extends State<NavigationScreen> {
   late final Widget _map = NaviMap(
-    styleString: buildMbtilesStyle('${widget.services.packDir}/map/korea.mbtiles'),
+    styleString: buildMbtilesStyle(packDir: widget.services.packDir),
     route: _nav.route,
     position: _nav.position,
     followPosition: true,
