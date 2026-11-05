@@ -77,8 +77,9 @@ filter_export buildings ""         w/building
 filter_export boundaries ""        w/boundary=administrative r/boundary=administrative
 
 # ---- graph-compiler 입력(nodes.tsv/edges.tsv) — road_name 열 포함(설계 3.3) ----
-osmium cat --overwrite -f osm -o "$WORK/daejeon.osm" "$WORK/daejeon.osm.pbf"
-"$PYTHON_BIN" "$ROOT/pipeline/graph/osm_to_graph_tsv.py" "$WORK/daejeon.osm" "$WORK"
+# highway way 와 그 way 의 참조 노드만 담긴 roads.osm.pbf 를 변환 입력으로 쓴다(전국 규모에서 XML·메모리 축소).
+osmium cat --overwrite -f osm -o "$WORK/roads.osm" "$WORK/roads.osm.pbf"
+"$PYTHON_BIN" "$ROOT/pipeline/graph/osm_to_graph_tsv.py" "$WORK/roads.osm" "$WORK"
 
 # ---- 산출 확인 ----
 "$PYTHON_BIN" - "$WORK" <<'PY'

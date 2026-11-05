@@ -21,6 +21,8 @@ import math
 import re
 import sys
 import xml.etree.ElementTree as ET
+from array import array
+from bisect import bisect_left
 from pathlib import Path
 
 # 자동차 통행이 가능한 highway 값만 그래프에 넣는다.
@@ -97,27 +99,63 @@ def _reject_entity_declarations(path: Path) -> None:
         raise ValueError(f"DTD/엔티티 선언이 있는 XML은 지원하지 않음: {path}")
 
 
-def read_nodes(path: Path) -> dict[int, tuple[float, float]]:
+E7 = 10_000_000
+
+
+class NodeTable:
+    """정렬된 id 배열(int64) + lat/lon E7 배열(int32). 노드당 16바이트.
+    OSM XML 은 노드가 id 순이므로 append 후 bisect 로 조회한다."""
+
+    def __init__(self) -> None:
+        self.ids = array("q")
+        self.lat = array("i")
+        self.lon = array("i")
+
+    def add(self, node_id: int, lat: str, lon: str) -> None:
+        # 7자리 소수 → 정수. float 경유 후 round 하므로 출력(.7f)이 원문과 같다.
+        if self.ids and node_id <= self.ids[-1]:
+            raise ValueError(f"노드 id 가 오름차순이 아님: {node_id} (osmium sort 필요)")
+        self.ids.append(node_id)
+        self.lat.append(round(float(lat) * E7))
+        self.lon.append(round(float(lon) * E7))
+
+    def index(self, node_id: int) -> int:
+        i = bisect_left(self.ids, node_id)
+        return i if i < len(self.ids) and self.ids[i] == node_id else -1
+
+    def point(self, i: int) -> tuple[float, float]:
+        return self.lat[i] / E7, self.lon[i] / E7
+
+
+def iter_osm(path: Path):
+    """노드는 NodeTable 에 쌓고, way 는 (id, refs, tags)로 내보낸다. 단일 패스."""
     _reject_entity_declarations(path)
-    nodes: dict[int, tuple[float, float]] = {}
-    for _, elem in ET.iterparse(path, events=("end",)):
+    table = NodeTable()
+    seen_way = False
+    root = None
+    for event, elem in ET.iterparse(path, events=("start", "end")):
+        if event == "start":
+            if root is None:
+                root = elem  # 루트가 닫힌 자식을 계속 쥐므로 주기적으로 비운다
+            continue
         if elem.tag == "node":
+            if seen_way:
+                raise ValueError("way 뒤에 node 가 나옴: 노드→way 순서 입력이 필요(osmium cat 출력)")
             try:
-                nodes[int(elem.attrib["id"])] = (float(elem.attrib["lat"]), float(elem.attrib["lon"]))
+                table.add(int(elem.attrib["id"]), elem.attrib["lat"], elem.attrib["lon"])
             except (KeyError, ValueError) as exc:
                 raise ValueError(f"노드 파싱 실패: {elem.attrib}: {exc}") from exc
-        elem.clear()
-    return nodes
-
-
-def read_ways(path: Path):
-    _reject_entity_declarations(path)
-    for _, elem in ET.iterparse(path, events=("end",)):
-        if elem.tag == "way":
+            elem.clear()
+            root.clear()
+        elif elem.tag == "way":
+            seen_way = True
             refs = [int(nd.attrib["ref"]) for nd in elem.findall("nd")]
             tags = {tag.attrib["k"]: tag.attrib["v"] for tag in elem.findall("tag")}
-            yield int(elem.attrib["id"]), refs, tags
+            yield table, int(elem.attrib["id"]), refs, tags
             elem.clear()
+            root.clear()
+    if not seen_way:
+        yield table, None, None, None
 
 
 def format_point(point: tuple[float, float]) -> str:
@@ -125,67 +163,77 @@ def format_point(point: tuple[float, float]) -> str:
 
 
 def convert(osm_path: Path, out_dir: Path) -> tuple[int, int]:
-    nodes = read_nodes(osm_path)
-    if not nodes:
-        raise ValueError(f"{osm_path}: 노드 없음")
-
-    used: set[int] = set()
-    lines: list[str] = []
+    out_dir.mkdir(parents=True, exist_ok=True)
+    edges_path = out_dir / "edges.tsv"
+    table: NodeTable | None = None
+    used = bytearray()  # 노드 인덱스별 사용 여부
+    n_edges = 0
     stats = {"ways": 0, "missing_nodes": 0, "short": 0, "self_loop": 0}
 
-    for way_id, refs, tags in read_ways(osm_path):
-        highway = tags.get("highway", "").strip().lower()
-        if not is_allowed(tags, highway):
-            continue
-        stats["ways"] += 1
-        if any(ref not in nodes for ref in refs):
-            stats["missing_nodes"] += 1
-            continue
-        # 연속 중복 노드 제거
-        seq = [refs[0]] + [ref for prev, ref in zip(refs, refs[1:]) if ref != prev] if refs else []
-        if len(seq) < 2:
-            stats["short"] += 1
-            continue
+    with edges_path.open("w", encoding="utf-8", newline="\n") as ef:
+        ef.write("# from_id\tto_id\tdistance_m\tspeed_kmh\troad_name\t[shape]\n")
+        for table, way_id, refs, tags in iter_osm(osm_path):
+            if way_id is None:
+                break
+            if not used:
+                used = bytearray(len(table.ids))
+            highway = tags.get("highway", "").strip().lower()
+            if not is_allowed(tags, highway):
+                continue
+            stats["ways"] += 1
+            idx = {ref: table.index(ref) for ref in set(refs)}
+            if any(i < 0 for i in idx.values()):
+                stats["missing_nodes"] += 1
+                continue
+            # 연속 중복 노드 제거
+            seq = [refs[0]] + [ref for prev, ref in zip(refs, refs[1:]) if ref != prev] if refs else []
+            if len(seq) < 2:
+                stats["short"] += 1
+                continue
 
-        distance = round(sum(haversine_m(nodes[a], nodes[b]) for a, b in zip(seq, seq[1:])))
-        if distance < 1:
-            stats["short"] += 1
-            continue
-        if seq[0] == seq[-1]:
-            stats["self_loop"] += 1
-            continue
+            pts = {ref: table.point(i) for ref, i in idx.items()}
+            distance = round(sum(haversine_m(pts[a], pts[b]) for a, b in zip(seq, seq[1:])))
+            if distance < 1:
+                stats["short"] += 1
+                continue
+            if seq[0] == seq[-1]:
+                stats["self_loop"] += 1
+                continue
 
-        name = tags.get("name") or tags.get("name:ko") or ""
-        speed = parse_speed(tags, highway)
-        direction = is_oneway(tags, highway)
-        shape = ",".join(format_point(nodes[ref]) for ref in seq[1:-1])
+            name = tags.get("name") or tags.get("name:ko") or ""
+            speed = parse_speed(tags, highway)
+            direction = is_oneway(tags, highway)
+            shape = ",".join(format_point(pts[ref]) for ref in seq[1:-1])
 
-        def emit(src: int, dst: int, geom: str) -> None:
-            lines.append(f"{src}\t{dst}\t{distance}\t{speed}\t{name}\t{geom}")
+            def emit(src: int, dst: int, geom: str) -> None:
+                ef.write(f"{src}\t{dst}\t{distance}\t{speed}\t{name}\t{geom}\n")
 
-        if direction in ("forward", "both"):
-            emit(seq[0], seq[-1], shape)
-        if direction in ("reverse", "both"):
-            emit(seq[-1], seq[0], ",".join(reversed(shape.split(","))) if shape else "")
+            if direction in ("forward", "both"):
+                emit(seq[0], seq[-1], shape)
+                n_edges += 1
+            if direction in ("reverse", "both"):
+                emit(seq[-1], seq[0], ",".join(reversed(shape.split(","))) if shape else "")
+                n_edges += 1
 
-        used.update(seq)
+            for ref in seq:
+                used[idx[ref]] = 1
 
-    if not lines:
+    if table is None or not len(table.ids):
+        raise ValueError(f"{osm_path}: 노드 없음")
+    if not n_edges:
         raise ValueError(f"{osm_path}: 변환 가능한 도로 에지 없음")
 
-    out_dir.mkdir(parents=True, exist_ok=True)
+    n_nodes = 0
     with (out_dir / "nodes.tsv").open("w", encoding="utf-8", newline="\n") as f:
         f.write("# osm_node_id\tlat\tlon\n")
-        for node_id in sorted(used):
-            lat, lon = nodes[node_id]
-            f.write(f"{node_id}\t{lat:.7f}\t{lon:.7f}\n")
+        for i, flag in enumerate(used):
+            if flag:
+                lat, lon = table.point(i)
+                f.write(f"{table.ids[i]}\t{lat:.7f}\t{lon:.7f}\n")
+                n_nodes += 1
 
-    with (out_dir / "edges.tsv").open("w", encoding="utf-8", newline="\n") as f:
-        f.write("# from_id\tto_id\tdistance_m\tspeed_kmh\troad_name\t[shape]\n")
-        f.writelines(line + "\n" for line in lines)
-
-    print(f"nodes={len(used)} edges={len(lines)} ways={stats}", file=sys.stderr)
-    return len(used), len(lines)
+    print(f"nodes={n_nodes} edges={n_edges} ways={stats}", file=sys.stderr)
+    return n_nodes, n_edges
 
 
 def main() -> int:
