@@ -140,4 +140,147 @@ void main() {
     await nav.onFix(_fix());
     expect(nav.notice.value, '경로를 찾지 못했습니다.');
   });
+
+  group('구간 전환 (경유지 도착)', () {
+    // 출발 → 경유지(북쪽 약 1.1km) → 목적지(경유지에서 북쪽 약 1.1km).
+    const origin = GeoPoint(lat: 36.35, lon: 127.38);
+    const waypoint = GeoPoint(lat: 36.36, lon: 127.38);
+    const dest = GeoPoint(lat: 36.37, lon: 127.38);
+    const midway = GeoPoint(lat: 36.355, lon: 127.38);
+    // 경유지 20m 앞: 도착 신호를 받을 만큼 가깝고 아직 이탈은 아닌 위치.
+    const beforeEnd = GeoPoint(lat: 36.35982, lon: 127.38);
+
+    /// 경유지 끝에서 [meters]만큼 북쪽으로 떨어진 점.
+    GeoPoint north(GeoPoint p, double meters) =>
+        GeoPoint(lat: p.lat + meters / 111195, lon: p.lon);
+
+    Future<void> startTwoLegs() async {
+      await nav.ensureSubscribed();
+      nav.startTrip(
+        const [
+          Stop(name: '경유1', point: waypoint),
+          Stop(name: '목적지', point: dest),
+        ],
+        [
+          fakeRoute(const [origin, waypoint]),
+          fakeRoute(const [waypoint, dest]),
+        ],
+      );
+    }
+
+    SnappedPosition snapped(GeoPoint p, {required bool off}) => SnappedPosition(
+      point: p,
+      roadId: BigInt.zero,
+      distanceToRouteM: off ? 40 : 0,
+      offRoute: off,
+    );
+
+    test('중간 Arrived는 다음 구간을 계획하고 도착 상태를 켜지 않는다', () async {
+      await startTwoLegs();
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+
+      expect(nav.activeLeg.value, 1);
+      expect(nav.arrived.value, isFalse);
+      expect(engine.planCalls.single.start, waypoint);
+      expect(engine.planCalls.single.end, dest);
+      expect(tts.spoken, ['경유지 1에 도착했습니다. 목적지로 안내합니다.']);
+    });
+
+    test('마지막 구간의 Arrived는 도착 상태를 켠다', () async {
+      await startTwoLegs();
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+
+      expect(nav.arrived.value, isTrue);
+      expect(engine.planCalls.length, 1);
+    });
+
+    test('구간 끝에서 먼 곳의 Arrived는 옛 구간의 늦은 신호로 보고 무시한다', () async {
+      await startTwoLegs();
+      engine.onUpdate = (p) => snapped(midway, off: false);
+      await nav.onFix(_fix());
+
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+
+      expect(nav.activeLeg.value, 0);
+      expect(engine.planCalls, isEmpty);
+    });
+
+    test('이탈 상태에서 경유지 60m 이내면 지나친 것으로 보고 다음 구간으로 넘어간다', () async {
+      await startTwoLegs();
+      engine.onUpdate = (p) => snapped(north(waypoint, 40), off: true);
+      await nav.onFix(_fix());
+
+      expect(nav.activeLeg.value, 1);
+      expect(engine.planCalls.single.end, dest);
+      expect(nav.offRoute.value, isFalse);
+    });
+
+    test('이탈 상태라도 경유지에서 60m를 넘게 떨어져 있으면 넘어가지 않는다', () async {
+      await startTwoLegs();
+      engine.onUpdate = (p) => snapped(north(waypoint, 200), off: true);
+      await nav.onFix(_fix());
+
+      expect(nav.activeLeg.value, 0);
+      expect(engine.planCalls, isEmpty);
+    });
+
+    test('새 구간의 첫 출발 안내는 발화하지 않고 카드에만 반영한다', () async {
+      await startTwoLegs();
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+
+      engine.events.add(
+        NavigationEvent.instruction(fakeStep(maneuver: Maneuver.depart)),
+      );
+      await _settle();
+      expect(nav.instruction.value?.maneuver, Maneuver.depart);
+      expect(tts.spoken.length, 1);
+
+      engine.events.add(
+        NavigationEvent.instruction(fakeStep(maneuver: Maneuver.left)),
+      );
+      await _settle();
+      expect(tts.spoken.last, '300미터 앞에서 좌회전.');
+    });
+
+    test('다음 구간 계획이 실패하면 경유지 기준으로 한 번 더 계획한다', () async {
+      await startTwoLegs();
+      engine.onUpdate = (p) => snapped(beforeEnd, off: false);
+      await nav.onFix(_fix());
+      engine.planError = (start, end) => start.lat == beforeEnd.lat
+          ? const EngineError.routingFailed('x')
+          : null;
+
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+
+      expect(engine.planCalls.map((c) => c.start.lat).toList(), [
+        beforeEnd.lat,
+        waypoint.lat,
+      ]);
+      expect(nav.activeLeg.value, 1);
+      expect(nav.notice.value, isNull);
+    });
+
+    test('재시도도 실패하면 안내 문구를 남기고 이후 도착 신호에 다시 계획하지 않는다', () async {
+      await startTwoLegs();
+      engine.planError = (start, end) => const EngineError.routingFailed('x');
+
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+      expect(nav.notice.value, '다음 구간 경로를 찾지 못했습니다. 경로를 찾지 못했습니다.');
+      expect(nav.activeLeg.value, 0);
+      expect(nav.arrived.value, isFalse);
+      expect(engine.planCalls.length, 2);
+
+      engine.events.add(const NavigationEvent.arrived());
+      await _settle();
+      expect(engine.planCalls.length, 2);
+    });
+  });
 }

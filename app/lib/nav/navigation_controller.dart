@@ -29,7 +29,7 @@ class NavigationController {
   final ValueNotifier<bool> offRoute = ValueNotifier(false);
   final ValueNotifier<bool> arrived = ValueNotifier(false);
 
-  /// 활성 구간 번호(0부터). 0이면 첫 구간을 안내 중이다.
+  /// 활성 구간 번호(0부터). 코어가 안내 중인 구간이다.
   final ValueNotifier<int> activeLeg = ValueNotifier(0);
 
   /// 사용자에게 한 번 보여줄 오류 문구. 소비 후 화면이 null로 되돌린다.
@@ -38,6 +38,23 @@ class NavigationController {
   StreamSubscription<NavigationEvent>? _events;
   DateTime? _lastSent;
   bool _inFlight = false;
+
+  /// 지점(경유지들 + 목적지, 마지막 = 목적지)과 구간 경로(_legs[i]: 지점 i-1 → 지점 i).
+  List<Stop> _stops = const [];
+  List<Route> _legs = const [];
+  GeoPoint? _lastSnapped;
+
+  /// 구간 전환 중. 이 동안 위치를 엔진에 보내지 않고 도착 판정을 무시한다.
+  bool _switching = false;
+
+  /// 다음 구간 계획이 두 번 다 실패함. 사용자가 안내를 끝내고 다시 계획할 때까지 전환하지 않는다.
+  bool _legFailed = false;
+
+  /// 새 구간의 첫 출발 안내는 경유지 도착 문구 뒤에 또 말하지 않는다.
+  bool _suppressDepartSpeech = false;
+
+  /// 여정이 시작·종료될 때마다 올라간다. 전환 도중 여정이 바뀌면 그 결과를 버리기 위해 쓴다.
+  int _tripSerial = 0;
 
   /// 이벤트 구독을 한 번만 시작한다. 이후 호출은 무시한다.
   Future<void> ensureSubscribed() async {
@@ -53,19 +70,33 @@ class NavigationController {
   }
 
   /// 체인 경로 시작. [legs]는 [stops] 순서의 구간 경로다(legs[i]: 직전 지점 → stops[i]).
-  /// 화면에는 구간을 이어 붙인 경로를 보여준다.
+  /// 화면에는 남은 구간을 이어 붙인 경로를 보여준다.
   void startTrip(List<Stop> stops, List<Route> legs) {
     assert(stops.length == legs.length, '지점 수와 구간 수가 같아야 한다');
+    _tripSerial++;
+    _stops = List.of(stops);
+    _legs = List.of(legs);
+    _lastSnapped = null;
+    _switching = false;
+    _legFailed = false;
+    _suppressDepartSpeech = false;
     activeLeg.value = 0;
-    final next = combineLegs(legs);
-    route.value = next;
+    final shown = _refreshRoute();
     instruction.value = null;
     offRoute.value = false;
     arrived.value = false;
-    position.value = next.polyline.isEmpty ? null : next.polyline.first;
+    position.value = shown.polyline.isEmpty ? null : shown.polyline.first;
   }
 
   void clearRoute() {
+    _tripSerial++;
+    _stops = const [];
+    _legs = const [];
+    _lastSnapped = null;
+    _switching = false;
+    _legFailed = false;
+    _suppressDepartSpeech = false;
+    activeLeg.value = 0;
     route.value = null;
     instruction.value = null;
     offRoute.value = false;
@@ -74,9 +105,9 @@ class NavigationController {
     _lastSent = null;
   }
 
-  /// 원시 위치를 엔진에 넘긴다. 10Hz 상한을 넘기거나 이전 호출이 끝나지 않았으면 버린다.
+  /// 원시 위치를 엔진에 넘긴다. 10Hz 상한을 넘기거나 이전 호출이 끝나지 않았거나 구간 전환 중이면 버린다.
   Future<void> onFix(RawFix fix) async {
-    if (route.value == null || _inFlight) return;
+    if (route.value == null || _inFlight || _switching) return;
     final current = now();
     final last = _lastSent;
     if (last != null && current.difference(last) < kPositionMinInterval) return;
@@ -91,6 +122,11 @@ class NavigationController {
       );
       position.value = snapped.point;
       offRoute.value = snapped.offRoute;
+      _lastSnapped = snapped.point;
+      // 판정 B: 이탈 상태인데 활성 구간 끝 근처면 경유지를 지나친 것으로 보고 다음 구간으로 넘어간다.
+      if (snapped.offRoute && _canSwitch && _nearActiveEnd(snapped.point)) {
+        await _advanceLeg();
+      }
     } catch (e) {
       notice.value = engineErrorText(e);
     } finally {
@@ -105,10 +141,88 @@ class NavigationController {
         offRoute.value = false;
       case NavigationEvent_Instruction(field0: final step):
         instruction.value = step;
-        unawaited(tts.speak(instructionSpeech(step)));
+        final muted = _suppressDepartSpeech && step.maneuver == Maneuver.depart;
+        _suppressDepartSpeech = false;
+        if (!muted) unawaited(tts.speak(instructionSpeech(step)));
       case NavigationEvent_Arrived():
-        arrived.value = true;
+        if (_hasNextLeg) {
+          // 판정 A: 중간 경유지 도착. 늦게 도착한 옛 구간의 신호는 위치로 거른다.
+          final snapped = _lastSnapped;
+          if (_canSwitch && (snapped == null || _nearActiveEnd(snapped))) {
+            unawaited(_advanceLeg());
+          }
+        } else {
+          arrived.value = true;
+        }
     }
+  }
+
+  /// 다음 구간으로 넘어간다. 경유지 도착 문구를 말하고 다음 구간 경로를 계획한다.
+  /// 계획이 실패하면 경유지 기준으로 한 번 더 시도하고, 그래도 실패하면 안내 문구를 남기고 멈춘다.
+  Future<void> _advanceLeg() async {
+    final serial = _tripSerial;
+    final k = activeLeg.value;
+    _switching = true;
+    try {
+      unawaited(
+        tts.speak(
+          waypointArrivalSpeech(
+            k + 1,
+            nextIsDestination: k + 1 == _legs.length - 1,
+          ),
+        ),
+      );
+      final next = await _planNextLeg(k);
+      if (serial != _tripSerial) return;
+      _legs[k + 1] = next;
+      activeLeg.value = k + 1;
+      _refreshRoute();
+      instruction.value = null;
+      offRoute.value = false;
+      _suppressDepartSpeech = true;
+    } catch (e) {
+      if (serial != _tripSerial) return;
+      notice.value = '다음 구간 경로를 찾지 못했습니다. ${engineErrorText(e)}';
+      _legFailed = true;
+    } finally {
+      if (serial == _tripSerial) _switching = false;
+    }
+  }
+
+  Future<Route> _planNextLeg(int k) async {
+    final end = _stops[k + 1].point;
+    try {
+      return await engine.planRoute(
+        start: _lastSnapped ?? _stops[k].point,
+        end: end,
+        profile: TravelProfile.car,
+      );
+    } catch (_) {
+      // 전환 직전 위치에서 실패하면 초기 계획과 같은 질의(경유지 기준)로 한 번 더 시도한다.
+      return engine.planRoute(
+        start: _stops[k].point,
+        end: end,
+        profile: TravelProfile.car,
+      );
+    }
+  }
+
+  /// 표시 경로 = 활성 구간부터 끝까지를 이어 붙인 경로. 지난 구간은 뺀다(design 7.2).
+  Route _refreshRoute() {
+    final shown = combineLegs([
+      for (var i = activeLeg.value; i < _legs.length; i++) _legs[i],
+    ]);
+    route.value = shown;
+    return shown;
+  }
+
+  bool get _hasNextLeg => activeLeg.value < _legs.length - 1;
+
+  bool get _canSwitch => _hasNextLeg && !_switching && !_legFailed;
+
+  bool _nearActiveEnd(GeoPoint p) {
+    final end = _legs[activeLeg.value].polyline;
+    return end.isNotEmpty && haversineM(p, end.last) <= kWaypointPassRadiusM;
   }
 
   Future<void> dispose() async {
