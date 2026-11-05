@@ -23,7 +23,7 @@ String buildMbtilesStyle(String mbtilesPath) {
       kMbtilesSourceId: {
         'type': 'vector',
         'url': url,
-        'attribution': '© OpenStreetMap contributors',
+        'attribution': '© OpenStreetMap 기여자 · ODbL',
       },
     },
     'layers': [

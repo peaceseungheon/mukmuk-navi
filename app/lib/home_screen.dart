@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart' hide Route;
 import 'package:mukmuk_app/app_services.dart';
+import 'package:mukmuk_app/attribution_dialog.dart';
 import 'package:mukmuk_app/engine/engine_error_text.dart';
 import 'package:mukmuk_app/ffibindings/api/types.dart';
 import 'package:mukmuk_app/map/mbtiles_style.dart';
@@ -144,9 +145,16 @@ class _HomeScreenState extends State<HomeScreen> {
           Positioned(
             left: 16,
             bottom: 16,
-            child: Text(
-              '데이터 ${_s.info.packVersion} · © OpenStreetMap contributors',
-              style: Theme.of(context).textTheme.bodySmall,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => AttributionDialog.show(context),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  '데이터 ${_s.info.packVersion} · © OpenStreetMap 기여자 · ODbL',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
             ),
           ),
         ],
