@@ -51,7 +51,8 @@ rust-core 12/12 | flutter-app 9/10 (P1 F1~F7·F9·F10 완료, F8은 P2 미착수
 - [x] F10 도로 레이어 스타일 폭·지오메트리 경고 수정 (의존: F2) [P1] — 완료조건: 에뮬레이터 z13 이하에서도 도로가 줌에 비례한 선 두께로 구분되어 보이고(스크린샷 확인), `Invalid geometry in line layer` 경고의 원인(타일 지오메트리 또는 스타일 `line-*` 표현식)을 확인해 해소하거나 무해함을 근거와 함께 기록 — 비고: 타일 roads는 전부 LineString으로 정상이나 boundaries 등 한 레이어에 점·선·면이 혼재 → 스타일에 geometry-type 필터 추가 후 경고 0건(에뮬레이터 로그), 도로를 등급별 3레이어·지수 보간 폭으로 변경. 스크린샷은 scratchpad f10_before/after_default.png / 재검증(2026-11-04): z12 3회 연속 실행(15:37:56·15:39:16·15:40:36) 경고 0건, z10(15:41:56)·z8(15:43:16)도 0건, 스크린샷 scratchpad f10_z12_*·f10_z10_*·f10_z8_* (줌 구분 폭 확인). 초기 줌은 임시 변경 후 12로 복구
 
 ### 데이터 관리 (P2)
-- [ ] F8 데이터 팩 업데이트 UI (의존: F1) [P2] — 완료조건: Wi-Fi에서 manifest 비교 후 새 팩 다운로드·교체 플로우 동작
+- [x] F8 데이터 팩 업데이트 UI (의존: F1) [P2] — 완료조건: Wi-Fi에서 manifest 비교 후 새 팩 다운로드·교체 플로우 동작 — 비고(2026-11-05): `MUKMUK_PACK_URL` 있을 때만 활성. lib/packs/(manifest 검증·경로 탈출 거부·sha256/size 대조·pack.new→pack 교체·재초기화 실패 시 롤백), 홈 하단 배너(진행률·다시 확인). analyze 0건, test 41개 통과(신규 9: test/packs/pack_updater_test.dart). 새 팩은 다음 실행부터 지도까지 반영(엔진은 재초기화, 지도 위젯은 재시작 필요).
+  - 수동 확인(에뮬레이터 API 37, http.server 18080 — 8000은 호스트에서 바인드 거부): 시드 2026.11 → 서버 2026.12로 manifest+3파일 다운로드·`files/pack` 교체 성공, 재시작 후 홈에 `데이터 2026.12`·지도 렌더, 재확인 시 manifest만 요청(다운로드 없음). 미확인(MANUAL): Wi-Fi 끈 상태 안내, 실제 https 서버. 주의: kPackDir를 `files/pack`으로 두면 첫 교체 때 그 시드가 대체됨.
 
 ## data-pipeline
 ### 샘플 데이터

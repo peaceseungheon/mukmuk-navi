@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart' hide Route;
 import 'package:mukmuk_app/app_services.dart';
-import 'package:mukmuk_app/config.dart';
 import 'package:mukmuk_app/ffibindings/api/types.dart';
 import 'package:mukmuk_app/format.dart';
 import 'package:mukmuk_app/map/mbtiles_style.dart';
@@ -29,7 +28,7 @@ class NavigationScreen extends StatefulWidget {
 
 class _NavigationScreenState extends State<NavigationScreen> {
   late final Widget _map = NaviMap(
-    styleString: buildMbtilesStyle('$kPackDir/map/korea.mbtiles'),
+    styleString: buildMbtilesStyle('${widget.services.packDir}/map/korea.mbtiles'),
     route: _nav.route,
     position: _nav.position,
     followPosition: true,

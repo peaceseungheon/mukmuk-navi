@@ -4,4 +4,7 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- 개발 전용: http://10.0.2.2 로 데이터 팩 테스트 서버에 접속하기 위한 cleartext 허용. release에는 두지 않는다. -->
+    <application
+        android:usesCleartextTraffic="true" />
 </manifest>

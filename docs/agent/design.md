@@ -280,6 +280,10 @@ CREATE VIRTUAL TABLE poi_fts USING fts5(
 | maplibre_gl | 0.27.1 (확인) | MapLibre GL Native의 Flutter 바인딩, 로컬 mbtiles 렌더 |
 | flutter_tts | 최신 안정(4.x) | 플랫폼 네이티브 TTS(네트워크 미사용, ko-KR 오프라인 음성) |
 | geolocator | 최신 안정 | GPS/모의 위치 수신 스트림 |
+| http | ^1.6.0 (확인) | 데이터 팩 manifest·파일 스트리밍 다운로드(F8) |
+| crypto | ^3.0.8 (확인) | 다운로드 파일 sha256 검증(F8) |
+| path_provider | ^2.1.6 (확인) | 앱 지원 디렉터리의 `pack/` 위치(F8) |
+| connectivity_plus | ^7.3.1 (확인) | Wi-Fi 연결 여부 조회(ACCESS_NETWORK_STATE, F8) |
 | osmium (CLI) | 최신 | OSM PBF 추출·태그 필터(① POI·경계) |
 | tippecanoe (CLI) | 최신 | GeoJSON→벡터 mbtiles(③) |
 | Python 3 (stdlib sqlite3) | 3.10+ | POI sqlite 생성·초성 변환(④), 추가 의존성 없음 |
