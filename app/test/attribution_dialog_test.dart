@@ -33,6 +33,9 @@ void main() {
     );
     expect(find.textContaining('© OpenStreetMap 기여자'), findsOneWidget);
     expect(find.textContaining('파생'), findsOneWidget);
+    expect(find.textContaining('Noto Sans KR'), findsOneWidget);
+    expect(find.textContaining('SIL Open Font License 1.1'), findsOneWidget);
+    expect(find.text('https://openfontlicense.org'), findsOneWidget);
 
     await tester.tap(find.text('닫기'));
     await tester.pumpAndSettle();
