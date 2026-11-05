@@ -114,3 +114,13 @@
 
 - 에이전트가 할 수 있는 정비: `build.gradle.kts:35` 오래된 TODO 주석 삭제(코드 변경이므로 승인 후 실행).
 - 다음 단계: USER 목록 처리 → 권한 결정 반영 후 `flutter build apk --release` 재실행 → 릴리스 병합 매니페스트 권한 재점검 → 실기기 MANUAL 확인.
+
+## 데이터 팩 공개 배포 (Cloudflare R2, 2026-11-05)
+- 버킷: `mukmuk-packs` (r2.dev 공개 접근 활성화)
+- 공개 주소: `https://pub-b41149f0f441435e93b044e49cd215f2.r2.dev/`
+- 올린 파일: `manifest.json`, `NOTICE.txt`, `map/korea.mbtiles`, `graph/korea.graph.bin`, `poi/korea.poi.sqlite` (샘플 팩 2026.11, 대전 범위)
+- 검증: 5개 파일을 내려받아 sha256이 로컬 원본과 일치(MATCH). 공개 주소 HTTP 200, 크기 일치.
+- 앱 빌드 인자: `--dart-define=MUKMUK_PACK_URL=https://pub-b41149f0f441435e93b044e49cd215f2.r2.dev/`
+- 라이선스: ODbL 1.0 — NOTICE.txt와 manifest의 license·license_uri·attribution 필드로 고지. 공개 배포 조건은 docs/human/odbl-review.md 참고.
+- USER: 법률 자문 여부 결정(벡터 타일 분류), GitHub 초안 릴리스(`pack-sample-2026.11`, 이전 zip 자산 포함) 정리 여부 결정.
+- 미확인: 앱이 공개 주소에서 실제로 내려받는 흐름(Wi-Fi 연결 상태에서 자동 확인·다운로드)의 end-to-end 확인은 이번 회차에 하지 못함.
