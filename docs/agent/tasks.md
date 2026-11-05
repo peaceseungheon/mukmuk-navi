@@ -44,6 +44,9 @@ rust-core 12/12 | flutter-app 9/10 (P1 F1~F7·F9·F10 완료, F8은 P2 미착수
 - [x] F11 지도 탭 장소 식별 + 출발지·목적지 지정 + 전국 검색 반경 (의존: F2, F3, R9) [P1] — 완료조건: 지도 탭 → nearby_poi로 주변 장소 조회 → 시트에서 "여기로 가기"(경로 계획)·"출발지로 설정" 동작, 탭 지점 마커 표시, 검색 반경에 "전국" 추가, 출발지 지정 시 검색·경로 기준점이 바뀜 — 비고: 코어 `nearby_poi`(core/core `nearby_poi`, 테스트 3건)·FFI 추가(설계 2.2절 갱신), 앱 단위 테스트 신규 7건(`tapped_place_test`, `place_sheet_test`, `radius_choice_test`), 전체 52건 통과, analyze 0건. 실기기 탭 반응·마커 위치·출발지 칩 동작은 MANUAL. 전국 반경(1000km) 검색의 0.5초 KPI는 전국 팩에서 MANUAL(승인) 측정 필요
 - [ ] F12 경유지 입력 (의존: F11) [P2] — 완료조건: 출발지·목적지 사이 경유지를 추가하면 구간별 plan_route를 이어 붙여 하나의 경로(polyline·안내)로 표시, 재탐색 시 경유 순서 유지 — 비고: 2026-11-05 사용자 결정으로 추후 진행. 코어 변경 없이 앱에서 구간 계획을 체인하는 방식을 우선 검토. 주행 중 재탐색·TBT의 구간 경계 처리 설계 필요
 
+### 지도 라벨 (2026-11-05 추가)
+- [~] F13 지도 도로명·POI 이름 라벨 + 글꼴 팩 (의존: F2, D5) [P1] — 완료조건: (a) 스타일에 도로명(roads, z14~, 선 따라)·POI 이름(poi, z14~) symbol 레이어가 있고 스타일 단위 테스트 통과, (b) 팩 `glyphs/NotoSansKR-Regular/{range}.pbf`를 스타일 `glyphs`(file://)가 가리키며 에뮬레이터에서 한글 라벨이 그려짐(스크린샷), (c) 글꼴 OFL 라이선스 문구를 출처 화면에 표기, (d) 글꼴 생성 스크립트를 pipeline/에 두고 manifest에 등록 — 비고(2026-11-05): (a)·(c) 완료. 스타일 `glyphs`는 `buildMbtilesStyle(packDir:)`로 주입, `flutter analyze` 0건, `flutter test` 56건 통과. (b)(d) 미완료: 글꼴 원본(Noto Sans KR OFL) 다운로드와 `fontnik` 설치가 자동 승인 정책에 의해 거부되어 PBF 생성을 못 함. 생성 전까지 라벨 요청은 글꼴 없이 실패(지도 렌더는 유지). manifest 호환: Dart `PackManifest.parse`와 Rust `Manifest::validate`는 필수 3개 외 files 항목을 허용하므로 글꼴 파일을 files에 추가해도 호환됨(확인 완료, 코드 변경 없음).
+
 ### 길 안내
 - [x] F4 경로 표시 + TBT 안내 UI (의존: R10, F2) [P1] — 완료조건: plan_route 호출→polyline·스텝 렌더, 매뉴버 아이콘 표시 — 비고: 매뉴버 아이콘·문구는 단위 테스트로 전 변형 확인. 경로 선 렌더와 실 plan_route는 MANUAL(실기기)
 - [x] F5 위치 갱신 위젯(맵매칭 스냅 반영) (의존: R10, F2) [P1] — 완료조건: 모의 위치로 update_position 호출, 스냅 위치를 최소 범위 위젯만 갱신(코드 리뷰) — 비고: 모의 주행 소스·10Hz 쓰로틀·스냅 반영을 단위 테스트로 확인. 위치 갱신은 GeoJSON 소스만 변경(부모 setState 없음). 실 주행 체감 확인은 MANUAL
