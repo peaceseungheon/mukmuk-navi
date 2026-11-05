@@ -5,11 +5,14 @@
 
 import 'api.dart';
 import 'api/types.dart';
+
 import 'dart:async';
 import 'dart:convert';
+
 import 'frb_generated.dart';
 import 'frb_generated.io.dart'
     if (dart.library.js_interop) 'frb_generated.web.dart';
+
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 /// Main entrypoint of the Rust API
@@ -36,12 +39,8 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 
   /// Initialize flutter_rust_bridge in mock mode.
   /// No libraries for FFI are loaded.
-  static void initMock({
-    required RustLibApi api,
-  }) {
-    instance.initMockImpl(
-      api: api,
-    );
+  static void initMock({required RustLibApi api}) {
+    instance.initMockImpl(api: api);
   }
 
   /// Dispose flutter_rust_bridge
@@ -69,38 +68,47 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => 2020436828;
+  int get rustContentHash => -1137761142;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
-    stem: 'mukmuk_bridge',
-    ioDirectory: '//?/D:/orac/workspace/mukmuk-navi/core/bridge/target/release',
-    webPrefix: 'pkg/',
-    wasmBindgenName: 'wasm_bindgen',
-  );
+        stem: 'mukmuk_bridge',
+        ioDirectory: '../core/bridge/target/release/',
+        webPrefix: 'pkg/',
+        wasmBindgenName: 'wasm_bindgen',
+      );
 }
 
 abstract class RustLibApi extends BaseApi {
   Future<EngineInfo> crateApiInitEngine({required String packDir});
 
-  Future<Route> crateApiPlanRoute(
-      {required GeoPoint start,
-      required GeoPoint end,
-      required TravelProfile profile});
+  Future<List<PoiResult>> crateApiNearbyPoi({
+    required GeoPoint center,
+    required double radiusKm,
+    required int limit,
+  });
 
-  Future<List<PoiResult>> crateApiSearchPoi(
-      {required String query,
-      required GeoPoint center,
-      required double radiusKm,
-      required int limit});
+  Future<Route> crateApiPlanRoute({
+    required GeoPoint start,
+    required GeoPoint end,
+    required TravelProfile profile,
+  });
+
+  Future<List<PoiResult>> crateApiSearchPoi({
+    required String query,
+    required GeoPoint center,
+    required double radiusKm,
+    required int limit,
+  });
 
   Stream<NavigationEvent> crateApiSubscribeNavigation();
 
-  Future<SnappedPosition> crateApiUpdatePosition(
-      {required GeoPoint pos,
-      required double speedMps,
-      required double headingDeg,
-      required BigInt tMs});
+  Future<SnappedPosition> crateApiUpdatePosition({
+    required GeoPoint pos,
+    required double speedMps,
+    required double headingDeg,
+    required BigInt tMs,
+  });
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -113,106 +121,168 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @override
   Future<EngineInfo> crateApiInitEngine({required String packDir}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_String(packDir, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 1, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_engine_info,
-        decodeErrorData: sse_decode_engine_error,
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(packDir, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 1,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_engine_info,
+          decodeErrorData: sse_decode_engine_error,
+        ),
+        constMeta: kCrateApiInitEngineConstMeta,
+        argValues: [packDir],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiInitEngineConstMeta,
-      argValues: [packDir],
-      apiImpl: this,
-    ));
+    );
   }
 
-  TaskConstMeta get kCrateApiInitEngineConstMeta => const TaskConstMeta(
-        debugName: "init_engine",
-        argNames: ["packDir"],
-      );
+  TaskConstMeta get kCrateApiInitEngineConstMeta =>
+      const TaskConstMeta(debugName: "init_engine", argNames: ["packDir"]);
 
   @override
-  Future<Route> crateApiPlanRoute(
-      {required GeoPoint start,
-      required GeoPoint end,
-      required TravelProfile profile}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_box_autoadd_geo_point(start, serializer);
-        sse_encode_box_autoadd_geo_point(end, serializer);
-        sse_encode_travel_profile(profile, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 2, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_route,
-        decodeErrorData: sse_decode_engine_error,
+  Future<List<PoiResult>> crateApiNearbyPoi({
+    required GeoPoint center,
+    required double radiusKm,
+    required int limit,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_geo_point(center, serializer);
+          sse_encode_f_64(radiusKm, serializer);
+          sse_encode_u_32(limit, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_poi_result,
+          decodeErrorData: sse_decode_engine_error,
+        ),
+        constMeta: kCrateApiNearbyPoiConstMeta,
+        argValues: [center, radiusKm, limit],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiPlanRouteConstMeta,
-      argValues: [start, end, profile],
-      apiImpl: this,
-    ));
+    );
+  }
+
+  TaskConstMeta get kCrateApiNearbyPoiConstMeta => const TaskConstMeta(
+    debugName: "nearby_poi",
+    argNames: ["center", "radiusKm", "limit"],
+  );
+
+  @override
+  Future<Route> crateApiPlanRoute({
+    required GeoPoint start,
+    required GeoPoint end,
+    required TravelProfile profile,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_geo_point(start, serializer);
+          sse_encode_box_autoadd_geo_point(end, serializer);
+          sse_encode_travel_profile(profile, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 3,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_route,
+          decodeErrorData: sse_decode_engine_error,
+        ),
+        constMeta: kCrateApiPlanRouteConstMeta,
+        argValues: [start, end, profile],
+        apiImpl: this,
+      ),
+    );
   }
 
   TaskConstMeta get kCrateApiPlanRouteConstMeta => const TaskConstMeta(
-        debugName: "plan_route",
-        argNames: ["start", "end", "profile"],
-      );
+    debugName: "plan_route",
+    argNames: ["start", "end", "profile"],
+  );
 
   @override
-  Future<List<PoiResult>> crateApiSearchPoi(
-      {required String query,
-      required GeoPoint center,
-      required double radiusKm,
-      required int limit}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_String(query, serializer);
-        sse_encode_box_autoadd_geo_point(center, serializer);
-        sse_encode_f_64(radiusKm, serializer);
-        sse_encode_u_32(limit, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 3, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_list_poi_result,
-        decodeErrorData: sse_decode_engine_error,
+  Future<List<PoiResult>> crateApiSearchPoi({
+    required String query,
+    required GeoPoint center,
+    required double radiusKm,
+    required int limit,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(query, serializer);
+          sse_encode_box_autoadd_geo_point(center, serializer);
+          sse_encode_f_64(radiusKm, serializer);
+          sse_encode_u_32(limit, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_poi_result,
+          decodeErrorData: sse_decode_engine_error,
+        ),
+        constMeta: kCrateApiSearchPoiConstMeta,
+        argValues: [query, center, radiusKm, limit],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiSearchPoiConstMeta,
-      argValues: [query, center, radiusKm, limit],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiSearchPoiConstMeta => const TaskConstMeta(
-        debugName: "search_poi",
-        argNames: ["query", "center", "radiusKm", "limit"],
-      );
+    debugName: "search_poi",
+    argNames: ["query", "center", "radiusKm", "limit"],
+  );
 
   @override
   Stream<NavigationEvent> crateApiSubscribeNavigation() {
     final sink = RustStreamSink<NavigationEvent>();
-    unawaited(handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_StreamSink_navigation_event_Sse(sink, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 4, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_unit,
-        decodeErrorData: sse_decode_engine_error,
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_StreamSink_navigation_event_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 5,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: sse_decode_engine_error,
+          ),
+          constMeta: kCrateApiSubscribeNavigationConstMeta,
+          argValues: [sink],
+          apiImpl: this,
+        ),
       ),
-      constMeta: kCrateApiSubscribeNavigationConstMeta,
-      argValues: [sink],
-      apiImpl: this,
-    )));
+    );
     return sink.stream;
   }
 
@@ -223,35 +293,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<SnappedPosition> crateApiUpdatePosition(
-      {required GeoPoint pos,
-      required double speedMps,
-      required double headingDeg,
-      required BigInt tMs}) {
-    return handler.executeNormal(NormalTask(
-      callFfi: (port_) {
-        final serializer = SseSerializer(generalizedFrbRustBinding);
-        sse_encode_box_autoadd_geo_point(pos, serializer);
-        sse_encode_f_64(speedMps, serializer);
-        sse_encode_f_64(headingDeg, serializer);
-        sse_encode_u_64(tMs, serializer);
-        pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 5, port: port_);
-      },
-      codec: SseCodec(
-        decodeSuccessData: sse_decode_snapped_position,
-        decodeErrorData: sse_decode_engine_error,
+  Future<SnappedPosition> crateApiUpdatePosition({
+    required GeoPoint pos,
+    required double speedMps,
+    required double headingDeg,
+    required BigInt tMs,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_geo_point(pos, serializer);
+          sse_encode_f_64(speedMps, serializer);
+          sse_encode_f_64(headingDeg, serializer);
+          sse_encode_u_64(tMs, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 6,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_snapped_position,
+          decodeErrorData: sse_decode_engine_error,
+        ),
+        constMeta: kCrateApiUpdatePositionConstMeta,
+        argValues: [pos, speedMps, headingDeg, tMs],
+        apiImpl: this,
       ),
-      constMeta: kCrateApiUpdatePositionConstMeta,
-      argValues: [pos, speedMps, headingDeg, tMs],
-      apiImpl: this,
-    ));
+    );
   }
 
   TaskConstMeta get kCrateApiUpdatePositionConstMeta => const TaskConstMeta(
-        debugName: "update_position",
-        argNames: ["pos", "speedMps", "headingDeg", "tMs"],
-      );
+    debugName: "update_position",
+    argNames: ["pos", "speedMps", "headingDeg", "tMs"],
+  );
 
   @protected
   AnyhowException dco_decode_AnyhowException(dynamic raw) {
@@ -261,7 +338,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   RustStreamSink<NavigationEvent> dco_decode_StreamSink_navigation_event_Sse(
-      dynamic raw) {
+    dynamic raw,
+  ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     throw UnimplementedError();
   }
@@ -319,29 +397,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 1:
         return EngineError_PackNotFound();
       case 2:
-        return EngineError_FormatMismatch(
-          dco_decode_String(raw[1]),
-        );
+        return EngineError_FormatMismatch(dco_decode_String(raw[1]));
       case 3:
-        return EngineError_GraphCorrupt(
-          dco_decode_String(raw[1]),
-        );
+        return EngineError_GraphCorrupt(dco_decode_String(raw[1]));
       case 4:
-        return EngineError_SearchFailed(
-          dco_decode_String(raw[1]),
-        );
+        return EngineError_SearchFailed(dco_decode_String(raw[1]));
       case 5:
-        return EngineError_RoutingFailed(
-          dco_decode_String(raw[1]),
-        );
+        return EngineError_RoutingFailed(dco_decode_String(raw[1]));
       case 6:
-        return EngineError_InvalidInput(
-          dco_decode_String(raw[1]),
-        );
+        return EngineError_InvalidInput(dco_decode_String(raw[1]));
       case 7:
-        return EngineError_Internal(
-          dco_decode_String(raw[1]),
-        );
+        return EngineError_Internal(dco_decode_String(raw[1]));
       default:
         throw Exception("unreachable");
     }
@@ -375,10 +441,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     final arr = raw as List<dynamic>;
     if (arr.length != 2)
       throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
-    return GeoPoint(
-      lat: dco_decode_f_64(arr[0]),
-      lon: dco_decode_f_64(arr[1]),
-    );
+    return GeoPoint(lat: dco_decode_f_64(arr[0]), lon: dco_decode_f_64(arr[1]));
   }
 
   @protected
@@ -422,9 +485,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     switch (raw[0]) {
       case 0:
-        return NavigationEvent_Rerouted(
-          dco_decode_box_autoadd_route(raw[1]),
-        );
+        return NavigationEvent_Rerouted(dco_decode_box_autoadd_route(raw[1]));
       case 1:
         return NavigationEvent_Instruction(
           dco_decode_box_autoadd_route_step(raw[1]),
@@ -540,7 +601,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   RustStreamSink<NavigationEvent> sse_decode_StreamSink_navigation_event_Sse(
-      SseDeserializer deserializer) {
+    SseDeserializer deserializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     throw UnimplementedError('Unreachable ()');
   }
@@ -560,10 +622,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_maxLon = sse_decode_f_64(deserializer);
     var var_maxLat = sse_decode_f_64(deserializer);
     return BBox(
-        minLon: var_minLon,
-        minLat: var_minLat,
-        maxLon: var_maxLon,
-        maxLat: var_maxLat);
+      minLon: var_minLon,
+      minLat: var_minLat,
+      maxLon: var_maxLon,
+      maxLat: var_maxLat,
+    );
   }
 
   @protected
@@ -633,12 +696,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_poiCount = sse_decode_u_64(deserializer);
     var var_bbox = sse_decode_b_box(deserializer);
     return EngineInfo(
-        packVersion: var_packVersion,
-        osmDate: var_osmDate,
-        formatVersion: var_formatVersion,
-        nodeCount: var_nodeCount,
-        poiCount: var_poiCount,
-        bbox: var_bbox);
+      packVersion: var_packVersion,
+      osmDate: var_osmDate,
+      formatVersion: var_formatVersion,
+      nodeCount: var_nodeCount,
+      poiCount: var_poiCount,
+      bbox: var_bbox,
+    );
   }
 
   @protected
@@ -751,12 +815,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_point = sse_decode_geo_point(deserializer);
     var var_distanceM = sse_decode_f_64(deserializer);
     return PoiResult(
-        id: var_id,
-        name: var_name,
-        category: var_category,
-        addr: var_addr,
-        point: var_point,
-        distanceM: var_distanceM);
+      id: var_id,
+      name: var_name,
+      category: var_category,
+      addr: var_addr,
+      point: var_point,
+      distanceM: var_distanceM,
+    );
   }
 
   @protected
@@ -767,10 +832,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_totalDistanceM = sse_decode_f_64(deserializer);
     var var_totalDurationS = sse_decode_f_64(deserializer);
     return Route(
-        polyline: var_polyline,
-        steps: var_steps,
-        totalDistanceM: var_totalDistanceM,
-        totalDurationS: var_totalDurationS);
+      polyline: var_polyline,
+      steps: var_steps,
+      totalDistanceM: var_totalDistanceM,
+      totalDurationS: var_totalDurationS,
+    );
   }
 
   @protected
@@ -782,11 +848,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_distanceM = sse_decode_f_64(deserializer);
     var var_durationS = sse_decode_f_64(deserializer);
     return RouteStep(
-        maneuver: var_maneuver,
-        roadName: var_roadName,
-        point: var_point,
-        distanceM: var_distanceM,
-        durationS: var_durationS);
+      maneuver: var_maneuver,
+      roadName: var_roadName,
+      point: var_point,
+      distanceM: var_distanceM,
+      durationS: var_durationS,
+    );
   }
 
   @protected
@@ -797,10 +864,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_distanceToRouteM = sse_decode_f_64(deserializer);
     var var_offRoute = sse_decode_bool(deserializer);
     return SnappedPosition(
-        point: var_point,
-        roadId: var_roadId,
-        distanceToRouteM: var_distanceToRouteM,
-        offRoute: var_offRoute);
+      point: var_point,
+      roadId: var_roadId,
+      distanceToRouteM: var_distanceToRouteM,
+      offRoute: var_offRoute,
+    );
   }
 
   @protected
@@ -835,22 +903,28 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_AnyhowException(
-      AnyhowException self, SseSerializer serializer) {
+    AnyhowException self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.message, serializer);
   }
 
   @protected
   void sse_encode_StreamSink_navigation_event_Sse(
-      RustStreamSink<NavigationEvent> self, SseSerializer serializer) {
+    RustStreamSink<NavigationEvent> self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(
-        self.setupAndSerialize(
-            codec: SseCodec(
+      self.setupAndSerialize(
+        codec: SseCodec(
           decodeSuccessData: sse_decode_navigation_event,
           decodeErrorData: sse_decode_AnyhowException,
-        )),
-        serializer);
+        ),
+      ),
+      serializer,
+    );
   }
 
   @protected
@@ -876,7 +950,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_box_autoadd_geo_point(
-      GeoPoint self, SseSerializer serializer) {
+    GeoPoint self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_geo_point(self, serializer);
   }
@@ -889,7 +965,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_box_autoadd_route_step(
-      RouteStep self, SseSerializer serializer) {
+    RouteStep self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_route_step(self, serializer);
   }
@@ -955,7 +1033,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_list_geo_point(
-      List<GeoPoint> self, SseSerializer serializer) {
+    List<GeoPoint> self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
@@ -965,7 +1045,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_list_poi_result(
-      List<PoiResult> self, SseSerializer serializer) {
+    List<PoiResult> self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
@@ -975,7 +1057,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_list_prim_u_8_strict(
-      Uint8List self, SseSerializer serializer) {
+    Uint8List self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     serializer.buffer.putUint8List(self);
@@ -983,7 +1067,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_list_route_step(
-      List<RouteStep> self, SseSerializer serializer) {
+    List<RouteStep> self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
@@ -999,7 +1085,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_navigation_event(
-      NavigationEvent self, SseSerializer serializer) {
+    NavigationEvent self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     switch (self) {
       case NavigationEvent_Rerouted(field0: final field0):
@@ -1055,7 +1143,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_snapped_position(
-      SnappedPosition self, SseSerializer serializer) {
+    SnappedPosition self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_geo_point(self.point, serializer);
     sse_encode_u_64(self.roadId, serializer);

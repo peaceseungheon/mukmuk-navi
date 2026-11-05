@@ -4,6 +4,7 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'types.freezed.dart';
@@ -45,24 +46,17 @@ sealed class EngineError with _$EngineError implements FrbException {
 
   const factory EngineError.notInitialized() = EngineError_NotInitialized;
   const factory EngineError.packNotFound() = EngineError_PackNotFound;
-  const factory EngineError.formatMismatch(
-    String field0,
-  ) = EngineError_FormatMismatch;
-  const factory EngineError.graphCorrupt(
-    String field0,
-  ) = EngineError_GraphCorrupt;
-  const factory EngineError.searchFailed(
-    String field0,
-  ) = EngineError_SearchFailed;
-  const factory EngineError.routingFailed(
-    String field0,
-  ) = EngineError_RoutingFailed;
-  const factory EngineError.invalidInput(
-    String field0,
-  ) = EngineError_InvalidInput;
-  const factory EngineError.internal(
-    String field0,
-  ) = EngineError_Internal;
+  const factory EngineError.formatMismatch(String field0) =
+      EngineError_FormatMismatch;
+  const factory EngineError.graphCorrupt(String field0) =
+      EngineError_GraphCorrupt;
+  const factory EngineError.searchFailed(String field0) =
+      EngineError_SearchFailed;
+  const factory EngineError.routingFailed(String field0) =
+      EngineError_RoutingFailed;
+  const factory EngineError.invalidInput(String field0) =
+      EngineError_InvalidInput;
+  const factory EngineError.internal(String field0) = EngineError_Internal;
 }
 
 class EngineInfo {
@@ -108,10 +102,7 @@ class GeoPoint {
   final double lat;
   final double lon;
 
-  const GeoPoint({
-    required this.lat,
-    required this.lon,
-  });
+  const GeoPoint({required this.lat, required this.lon});
 
   @override
   int get hashCode => lat.hashCode ^ lon.hashCode;
@@ -136,19 +127,16 @@ enum Maneuver {
   mergeLeft,
   mergeRight,
   arrive,
-  ;
 }
 
 @freezed
 sealed class NavigationEvent with _$NavigationEvent {
   const NavigationEvent._();
 
-  const factory NavigationEvent.rerouted(
-    Route field0,
-  ) = NavigationEvent_Rerouted;
-  const factory NavigationEvent.instruction(
-    RouteStep field0,
-  ) = NavigationEvent_Instruction;
+  const factory NavigationEvent.rerouted(Route field0) =
+      NavigationEvent_Rerouted;
+  const factory NavigationEvent.instruction(RouteStep field0) =
+      NavigationEvent_Instruction;
   const factory NavigationEvent.arrived() = NavigationEvent_Arrived;
 }
 
@@ -288,8 +276,4 @@ class SnappedPosition {
           offRoute == other.offRoute;
 }
 
-enum TravelProfile {
-  car,
-  foot,
-  ;
-}
+enum TravelProfile { car, foot }

@@ -5,10 +5,13 @@
 
 import 'api.dart';
 import 'api/types.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi' as ffi;
+
 import 'frb_generated.dart';
+
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_io.dart';
 
 abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
@@ -24,7 +27,8 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RustStreamSink<NavigationEvent> dco_decode_StreamSink_navigation_event_Sse(
-      dynamic raw);
+    dynamic raw,
+  );
 
   @protected
   String dco_decode_String(dynamic raw);
@@ -112,7 +116,8 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RustStreamSink<NavigationEvent> sse_decode_StreamSink_navigation_event_Sse(
-      SseDeserializer deserializer);
+    SseDeserializer deserializer,
+  );
 
   @protected
   String sse_decode_String(SseDeserializer deserializer);
@@ -197,11 +202,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_AnyhowException(
-      AnyhowException self, SseSerializer serializer);
+    AnyhowException self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_StreamSink_navigation_event_Sse(
-      RustStreamSink<NavigationEvent> self, SseSerializer serializer);
+    RustStreamSink<NavigationEvent> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_String(String self, SseSerializer serializer);
@@ -214,14 +223,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_box_autoadd_geo_point(
-      GeoPoint self, SseSerializer serializer);
+    GeoPoint self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_box_autoadd_route(Route self, SseSerializer serializer);
 
   @protected
   void sse_encode_box_autoadd_route_step(
-      RouteStep self, SseSerializer serializer);
+    RouteStep self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_engine_error(EngineError self, SseSerializer serializer);
@@ -243,22 +256,30 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_poi_result(
-      List<PoiResult> self, SseSerializer serializer);
+    List<PoiResult> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_prim_u_8_strict(
-      Uint8List self, SseSerializer serializer);
+    Uint8List self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_route_step(
-      List<RouteStep> self, SseSerializer serializer);
+    List<RouteStep> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_maneuver(Maneuver self, SseSerializer serializer);
 
   @protected
   void sse_encode_navigation_event(
-      NavigationEvent self, SseSerializer serializer);
+    NavigationEvent self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
@@ -274,7 +295,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_snapped_position(
-      SnappedPosition self, SseSerializer serializer);
+    SnappedPosition self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_travel_profile(TravelProfile self, SseSerializer serializer);
@@ -300,9 +323,9 @@ class RustLibWire implements BaseWire {
 
   /// Holds the symbol lookup function.
   final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
-      _lookup;
+  _lookup;
 
   /// The symbols are looked up in [dynamicLibrary].
   RustLibWire(ffi.DynamicLibrary dynamicLibrary)
-      : _lookup = dynamicLibrary.lookup;
+    : _lookup = dynamicLibrary.lookup;
 }

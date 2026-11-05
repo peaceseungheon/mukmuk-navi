@@ -41,6 +41,18 @@ pub async fn search_poi(
     Ok(results.into_iter().map(Into::into).collect())
 }
 
+/// 지도 탭 지점 주변 POI(거리순). 설계 2.2절에 추가된 함수(기존 시그니처는 변경 없음).
+#[frb]
+pub async fn nearby_poi(
+    center: GeoPoint,
+    radius_km: f64,
+    limit: u32,
+) -> Result<Vec<PoiResult>, EngineError> {
+    let engine = engine::current()?;
+    let results = engine.nearby(center.into(), radius_km, limit)?;
+    Ok(results.into_iter().map(Into::into).collect())
+}
+
 #[frb]
 pub async fn plan_route(
     start: GeoPoint,

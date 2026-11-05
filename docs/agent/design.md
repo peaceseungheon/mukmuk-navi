@@ -107,6 +107,9 @@ enum EngineError {
 #[frb] pub async fn init_engine(pack_dir: String) -> Result<EngineInfo, EngineError>;
 #[frb] pub async fn search_poi(query: String, center: GeoPoint,
                                radius_km: f64, limit: u32) -> Result<Vec<PoiResult>, EngineError>;
+// 추가(2026-11-05, 지도 탭 주변 장소 식별): 기존 함수 시그니처는 변경하지 않는다.
+#[frb] pub async fn nearby_poi(center: GeoPoint, radius_km: f64,
+                               limit: u32) -> Result<Vec<PoiResult>, EngineError>;
 #[frb] pub async fn plan_route(start: GeoPoint, end: GeoPoint,
                                profile: TravelProfile) -> Result<Route, EngineError>;
 #[frb] pub async fn subscribe_navigation(sink: StreamSink<NavigationEvent>) -> Result<(), EngineError>;

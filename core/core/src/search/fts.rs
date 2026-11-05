@@ -104,9 +104,7 @@ pub fn search_poi(
 
     let conn = open_checked(db_path)?;
     let radius_m = radius_km * 1000.0;
-    let lat_delta = radius_m / METERS_PER_DEG_LAT;
-    let cos_lat = center.lat.to_radians().cos().abs().max(1e-9);
-    let lon_delta = radius_m / (METERS_PER_DEG_LAT * cos_lat);
+    let (lat_lo, lat_hi, lon_lo, lon_hi) = bbox_e7(center, radius_m);
     let match_expr = fts_match_expression(trimmed);
 
     let mut stmt = conn
@@ -120,13 +118,7 @@ pub fn search_poi(
         .map_err(|e| EngineError::SearchFailed(format!("prepare: {e}")))?;
     let rows = stmt
         .query_map(
-            rusqlite::params![
-                match_expr,
-                ((center.lat - lat_delta) * 1e7) as i64,
-                ((center.lat + lat_delta) * 1e7) as i64,
-                ((center.lon - lon_delta) * 1e7) as i64,
-                ((center.lon + lon_delta) * 1e7) as i64,
-            ],
+            rusqlite::params![match_expr, lat_lo, lat_hi, lon_lo, lon_hi],
             |row| {
                 let lat_e7: i64 = row.get(4)?;
                 let lon_e7: i64 = row.get(5)?;
@@ -160,10 +152,125 @@ pub fn search_poi(
     Ok(results)
 }
 
+/// 지도 탭 지점 주변 POI를 거리 오름차순으로 최대 `limit`개 반환한다(FTS 없이 좌표 인덱스만 사용).
+/// 지도 탭 식별 용도이므로 반경은 작게(수백 m) 준다.
+pub fn nearby_poi(
+    db_path: &Path,
+    center: GeoPoint,
+    radius_km: f64,
+    limit: u32,
+) -> Result<Vec<PoiResult>, EngineError> {
+    if !radius_km.is_finite() || radius_km <= 0.0 {
+        return Err(EngineError::InvalidInput(
+            "radius_km must be positive".into(),
+        ));
+    }
+    if limit == 0 {
+        return Err(EngineError::InvalidInput("limit must be positive".into()));
+    }
+    if !(-90.0..=90.0).contains(&center.lat) || !(-180.0..=180.0).contains(&center.lon) {
+        return Err(EngineError::InvalidInput("center out of range".into()));
+    }
+
+    let conn = open_checked(db_path)?;
+    let radius_m = radius_km * 1000.0;
+    let (lat_lo, lat_hi, lon_lo, lon_hi) = bbox_e7(center, radius_m);
+    let mut stmt = conn
+        .prepare(
+            "SELECT p.id, p.name, p.category, p.addr, p.lat_e7, p.lon_e7
+             FROM poi p
+             WHERE p.lat_e7 BETWEEN ?1 AND ?2 AND p.lon_e7 BETWEEN ?3 AND ?4",
+        )
+        .map_err(|e| EngineError::SearchFailed(format!("prepare: {e}")))?;
+    let rows = stmt
+        .query_map(rusqlite::params![lat_lo, lat_hi, lon_lo, lon_hi], |row| {
+            let lat_e7: i64 = row.get(4)?;
+            let lon_e7: i64 = row.get(5)?;
+            Ok(PoiResult {
+                id: row.get::<_, i64>(0)? as u64,
+                name: row.get(1)?,
+                category: row.get(2)?,
+                addr: row.get(3)?,
+                point: GeoPoint::new(lat_e7 as f64 / 1e7, lon_e7 as f64 / 1e7),
+                distance_m: 0.0,
+            })
+        })
+        .map_err(|e| EngineError::SearchFailed(format!("query: {e}")))?;
+
+    let mut results: Vec<PoiResult> = Vec::new();
+    for row in rows {
+        let mut poi = row.map_err(|e| EngineError::SearchFailed(format!("row: {e}")))?;
+        poi.distance_m = haversine_m(center, poi.point);
+        if poi.distance_m <= radius_m {
+            results.push(poi);
+        }
+    }
+    results.sort_by(|a, b| {
+        a.distance_m
+            .partial_cmp(&b.distance_m)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| a.id.cmp(&b.id))
+    });
+    results.truncate(limit as usize);
+    Ok(results)
+}
+
+/// 중심과 반경(m)으로 E7 정수 bbox (lat_lo, lat_hi, lon_lo, lon_hi)를 만든다.
+fn bbox_e7(center: GeoPoint, radius_m: f64) -> (i64, i64, i64, i64) {
+    let lat_delta = radius_m / METERS_PER_DEG_LAT;
+    let cos_lat = center.lat.to_radians().cos().abs().max(1e-9);
+    let lon_delta = radius_m / (METERS_PER_DEG_LAT * cos_lat);
+    (
+        ((center.lat - lat_delta) * 1e7) as i64,
+        ((center.lat + lat_delta) * 1e7) as i64,
+        ((center.lon - lon_delta) * 1e7) as i64,
+        ((center.lon + lon_delta) * 1e7) as i64,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use rusqlite::Connection;
+
+    #[test]
+    fn nearby_returns_closest_first_and_respects_radius() {
+        let (_d, path) = fixture();
+        // 대전역(id 1)과 대전카페(id 2) 근처. 서울역은 수백 km 밖.
+        let out = nearby_poi(&path, daejeon(), 1.0, 10).expect("nearby");
+        let ids: Vec<u64> = out.iter().map(|p| p.id).collect();
+        assert_eq!(ids, vec![1, 2]);
+        assert!(out[0].distance_m <= out[1].distance_m);
+        assert!(out.iter().all(|p| p.distance_m <= 1000.0));
+    }
+
+    #[test]
+    fn nearby_limit_and_empty_area() {
+        let (_d, path) = fixture();
+        assert_eq!(
+            nearby_poi(&path, daejeon(), 1.0, 1).expect("limit").len(),
+            1
+        );
+        let far = GeoPoint::new(35.0, 129.0);
+        assert!(nearby_poi(&path, far, 0.3, 10).expect("empty").is_empty());
+    }
+
+    #[test]
+    fn nearby_rejects_invalid_input() {
+        let (_d, path) = fixture();
+        assert!(matches!(
+            nearby_poi(&path, daejeon(), 0.0, 10),
+            Err(EngineError::InvalidInput(_))
+        ));
+        assert!(matches!(
+            nearby_poi(&path, daejeon(), 1.0, 0),
+            Err(EngineError::InvalidInput(_))
+        ));
+        assert!(matches!(
+            nearby_poi(&path, GeoPoint::new(95.0, 0.0), 1.0, 10),
+            Err(EngineError::InvalidInput(_))
+        ));
+    }
 
     fn fixture() -> (tempfile::TempDir, std::path::PathBuf) {
         let dir = tempfile::tempdir().expect("tempdir");
