@@ -33,6 +33,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
     position: _nav.position,
     followPosition: true,
     tapMarker: _noTapMarker,
+    waypoints: _nav.waypoints,
   );
 
   /// 주행 화면은 지도 탭을 쓰지 않으므로 항상 null인 마커를 준다.
@@ -220,13 +221,20 @@ class _RouteSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Route?>(
-      valueListenable: nav.route,
-      builder: (context, route, _) => Text(
-        route == null
-            ? ''
-            : '${formatDistanceM(route.totalDistanceM)} · ${formatDurationS(route.totalDurationS)}',
-        style: Theme.of(context).textTheme.titleMedium,
+    return ValueListenableBuilder<List<GeoPoint>>(
+      valueListenable: nav.waypoints,
+      builder: (context, remaining, _) => ValueListenableBuilder<Route?>(
+        valueListenable: nav.route,
+        builder: (context, route, _) => Text(
+          route == null
+              ? ''
+              : tripSummaryText(
+                  remainingWaypoints: remaining.length,
+                  distanceM: route.totalDistanceM,
+                  durationS: route.totalDurationS,
+                ),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
       ),
     );
   }

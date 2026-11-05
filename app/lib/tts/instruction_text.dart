@@ -7,7 +7,8 @@ String instructionSpeech(RouteStep step) {
   return switch (step.maneuver) {
     Maneuver.depart => '$road경로 안내를 시작합니다.',
     Maneuver.arrive => '목적지에 도착했습니다.',
-    _ => '${distanceSpeech(step.distanceM)} 앞에서 $road${maneuverLabel(step.maneuver)}.',
+    _ =>
+      '${distanceSpeech(step.distanceM)} 앞에서 $road${maneuverLabel(step.maneuver)}.',
   };
 }
 
@@ -19,4 +20,10 @@ String distanceSpeech(double meters) {
   }
   final km = (meters / 100).round() / 10;
   return '${km.toStringAsFixed(1)}킬로미터';
+}
+
+/// 경유지 도착 발화. [ordinal]은 1부터 센 경유지 번호다. 이름은 길 수 있어 번호만 읽는다.
+String waypointArrivalSpeech(int ordinal, {required bool nextIsDestination}) {
+  final next = nextIsDestination ? '목적지로 안내합니다.' : '다음 경유지로 안내합니다.';
+  return '경유지 $ordinal에 도착했습니다. $next';
 }

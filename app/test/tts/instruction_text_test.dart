@@ -37,4 +37,18 @@ void main() {
       '목적지에 도착했습니다.',
     );
   });
+
+  test('다음 지점이 경유지면 다음 경유지로 안내한다는 발화를 만든다', () {
+    expect(
+      waypointArrivalSpeech(1, nextIsDestination: false),
+      '경유지 1에 도착했습니다. 다음 경유지로 안내합니다.',
+    );
+  });
+
+  test('다음 지점이 목적지면 목적지로 안내한다는 발화를 만든다', () {
+    expect(
+      waypointArrivalSpeech(2, nextIsDestination: true),
+      '경유지 2에 도착했습니다. 목적지로 안내합니다.',
+    );
+  });
 }

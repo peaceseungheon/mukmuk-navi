@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Route;
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -10,6 +12,8 @@ const String _positionSourceId = 'position';
 const String _positionLayerId = 'position-dot';
 const String _tapSourceId = 'tap-marker';
 const String _tapLayerId = 'tap-marker-dot';
+const String _waypointSourceId = 'waypoints';
+const String _waypointLayerId = 'waypoint-dot';
 
 const Map<String, Object> _emptyFc = {
   'type': 'FeatureCollection',
@@ -26,6 +30,7 @@ class NaviMap extends StatefulWidget {
     required this.position,
     this.followPosition = false,
     required this.tapMarker,
+    required this.waypoints,
     this.onMapTap,
   });
 
@@ -36,6 +41,9 @@ class NaviMap extends StatefulWidget {
 
   /// 사용자가 탭한 지점 표시. null이면 마커를 지운다.
   final ValueListenable<GeoPoint?> tapMarker;
+
+  /// 경유지 마커 좌표(순서 무관). 빈 목록이면 마커를 지운다.
+  final ValueListenable<List<GeoPoint>> waypoints;
 
   /// 지도 탭 콜백(좌표).
   final ValueChanged<LatLng>? onMapTap;
@@ -54,6 +62,7 @@ class _NaviMapState extends State<NaviMap> {
     widget.route.addListener(_onRouteChanged);
     widget.position.addListener(_onPositionChanged);
     widget.tapMarker.addListener(_onTapMarkerChanged);
+    widget.waypoints.addListener(_onWaypointsChanged);
   }
 
   @override
@@ -71,6 +80,10 @@ class _NaviMapState extends State<NaviMap> {
       oldWidget.tapMarker.removeListener(_onTapMarkerChanged);
       widget.tapMarker.addListener(_onTapMarkerChanged);
     }
+    if (oldWidget.waypoints != widget.waypoints) {
+      oldWidget.waypoints.removeListener(_onWaypointsChanged);
+      widget.waypoints.addListener(_onWaypointsChanged);
+    }
   }
 
   @override
@@ -78,6 +91,7 @@ class _NaviMapState extends State<NaviMap> {
     widget.route.removeListener(_onRouteChanged);
     widget.position.removeListener(_onPositionChanged);
     widget.tapMarker.removeListener(_onTapMarkerChanged);
+    widget.waypoints.removeListener(_onWaypointsChanged);
     super.dispose();
   }
 
@@ -117,11 +131,47 @@ class _NaviMapState extends State<NaviMap> {
         circleStrokeWidth: 2,
       ),
     );
+    await c.addGeoJsonSource(_waypointSourceId, _emptyFc);
+    await c.addCircleLayer(
+      _waypointSourceId,
+      _waypointLayerId,
+      const CircleLayerProperties(
+        circleRadius: 7,
+        circleColor: '#1565c0',
+        circleStrokeColor: '#ffffff',
+        circleStrokeWidth: 2,
+      ),
+    );
     _styleReady = true;
     // 스타일 로드 전에 쌓인 상태를 한 번 반영한다.
     _onRouteChanged();
     _onPositionChanged();
     _onTapMarkerChanged();
+    _onWaypointsChanged();
+  }
+
+  void _onWaypointsChanged() {
+    if (!_styleReady) return;
+    unawaited(_pushWaypoints(widget.waypoints.value));
+  }
+
+  Future<void> _pushWaypoints(List<GeoPoint> points) async {
+    final c = _controller;
+    if (c == null) return;
+    await c.setGeoJsonSource(_waypointSourceId, {
+      'type': 'FeatureCollection',
+      'features': [
+        for (final p in points)
+          {
+            'type': 'Feature',
+            'properties': <String, Object>{},
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [p.lon, p.lat],
+            },
+          },
+      ],
+    });
   }
 
   void _onTapMarkerChanged() {

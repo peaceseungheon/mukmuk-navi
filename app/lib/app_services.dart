@@ -8,6 +8,7 @@ import 'package:mukmuk_app/engine/navi_engine.dart';
 import 'package:mukmuk_app/ffibindings/api/types.dart';
 import 'package:mukmuk_app/nav/navigation_controller.dart';
 import 'package:mukmuk_app/nav/position_source.dart';
+import 'package:mukmuk_app/nav/trip.dart';
 import 'package:mukmuk_app/packs/pack_fetcher.dart';
 import 'package:mukmuk_app/packs/pack_update_controller.dart';
 import 'package:mukmuk_app/packs/pack_updater.dart';
@@ -48,6 +49,31 @@ final class AppServices {
   /// 지도 탭으로 사용자가 지정한 출발지. null이면 GPS 위치를 쓴다.
   final ValueNotifier<GeoPoint?> pickedOrigin = ValueNotifier(null);
 
+  /// 목적지 전에 들를 경유지(최대 [kMaxWaypoints]). 추가는 끝에, 삭제는 칩의 ×로 한다.
+  final ValueNotifier<List<Stop>> waypoints = ValueNotifier(const []);
+
+  /// 경유지를 끝에 추가한다. 이미 [kMaxWaypoints]개면 추가하지 않고 false를 돌려준다.
+  bool addWaypoint(Stop stop) {
+    final current = waypoints.value;
+    if (current.length >= kMaxWaypoints) return false;
+    _setWaypoints([...current, stop]);
+    return true;
+  }
+
+  void removeWaypointAt(int index) {
+    _setWaypoints([...waypoints.value]..removeAt(index));
+  }
+
+  void clearWaypoints() => _setWaypoints(const []);
+
+  /// 지도 마커용 좌표. [waypoints]와 같은 순서이며 항상 같이 바뀐다.
+  final ValueNotifier<List<GeoPoint>> waypointPoints = ValueNotifier(const []);
+
+  void _setWaypoints(List<Stop> next) {
+    waypoints.value = next;
+    waypointPoints.value = [for (final s in next) s.point];
+  }
+
   /// 경로·검색 기준점: 지정한 출발지 → GPS 위치 → 기본값(대전 시청) 순서.
   GeoPoint get origin =>
       pickedOrigin.value ??
@@ -57,6 +83,8 @@ final class AppServices {
   Future<void> dispose() async {
     await _gpsSub?.cancel();
     pickedOrigin.dispose();
+    waypoints.dispose();
+    waypointPoints.dispose();
     lastGps.dispose();
     gpsNotice.dispose();
     packUpdate?.dispose();
