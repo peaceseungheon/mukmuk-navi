@@ -1,6 +1,6 @@
 # 인수인계 — 묵묵(MukMuk) 개발 재개 가이드 (agent용)
 
-- 작성: 2026-11-05. 기준 커밋: `main` = `e5237b4`.
+- 작성: 2026-11-05. 최종 갱신: 2026-11-05(F13 완료 반영). 기준 커밋: `main` = `e1ca10c`.
 - 이 문서는 **다른 PC/환경에서 개발을 이어갈 AI 에이전트**를 위한 것이다. 사람용 요약은 `docs/human/handoff.md`.
 - 기억(메모리) 파일은 PC별 경로(`C:\Users\...\.claude\projects\...\memory\`)에 있어 옮겨지지 않는다. 이 문서가 그 내용을 대신한다.
 - 작업 전 필독 순서: 이 문서 → `CLAUDE.md` → `docs/agent/standards.md` → `docs/agent/tasks.md` → `docs/agent/design.md`.
@@ -11,28 +11,26 @@
 
 | 항목 | 상태 |
 | --- | --- |
-| `main` | `e5237b4`. 앱·코어·파이프라인 P1 대부분 완료. 지도 탭 장소 식별·출발지·전국 검색(F11) 포함 |
-| `feat/map-labels` | 진행 중(F13). 커밋 3개: `18a404a` 라벨 레이어, `7cbbfe5` 글꼴 OFL 문구, `f81f451` 작업 등록. **main 미병합** |
-| F13 글꼴 팩 | 글꼴 생성 완료(`data/work/glyph_out/NotoSansKR-Regular/`, PBF 256개, 18MB). 남은 일: 에뮬레이터 `file://` 검증, manifest 등록, 게이트, 커밋, 병합 |
-| `docs/handoff` | 이 문서를 담은 브랜치(워크트리 `D:\orac\workspace\mukmuk-navi-handoff`) |
-| 미추적 파일 | `pipeline/glyph/`(빈 폴더로 보임, 글꼴 파이프라인 작업 흔적). 커밋 전 확인 |
+| `main` | `e1ca10c`. 앱·코어·파이프라인 P1 대부분 완료. 지도 탭 장소 식별·출발지·전국 검색(F11), 지도 이름 라벨·글꼴 팩(F13) 포함 |
+| `feat/map-labels` | `main`에 병합 완료(`e1ca10c`). 더 이상 진행하지 않는다 |
+| F13 지도 라벨 | **완료**. 도로명·POI 이름 라벨(z14+), 글꼴 PBF 256개(18MB, Noto Sans KR OFL). 등록 스크립트 `pipeline/glyph/register_glyphs.py`(커밋 `9184d35`). 에뮬레이터에서 한글 라벨 확인(스크린샷: scratchpad `labels_z15_tempbuild.png`). 글꼴 생성물은 `data/work/glyph_out/NotoSansKR-Regular/`(gitignore) |
+| 전국 팩 백업 | `data/work/backup_national_pack/pack.tar`(975MB, 원본 manifest 포함) |
+| 줌 설정 | `app/lib/config.dart`의 `kMapInitialZoom = 12`. 라벨 확인용 임시 15는 되돌렸고, `main`에는 12가 있다 |
+| 미추적 파일 | `pipeline/glyph/`(빈 폴더로 보임). 커밋 전 확인 |
 | 수정 중인 파일(커밋 금지) | `pipeline/graph/osm_to_graph_tsv.py`, `pipeline/manifest.py`, `pipeline/osm_extract.sh` — **줄바꿈(CRLF)만 다른 차이**. 내용 변경 아님. 스테이징하지 않는다 |
 
 ### 작업 목록 요약 (docs/agent/tasks.md 기준)
 - rust-core: 12/12 완료
-- flutter-app: F1~F7, F9~F11 완료. **F8(팩 업데이트 UI)은 P2 — 실제로는 구현·검증됨(첫 실행 다운로드, 48f525f)**. F12(경유지)는 P2 미착수. F13 진행 중
+- flutter-app: F1~F7, F9~F11, F13 완료. **F8(팩 업데이트 UI)은 P2 — 실제로는 구현·검증됨(첫 실행 다운로드, 48f525f)**. F12(경유지)는 P2 미착수. (진행 요약 수치는 오래됨: 다음 작업에서 다시 센다)
 - data-pipeline: D1~D6 완료. D7(CI 정기 빌드)·D8(전국 빌드 문서)은 P2 미착수
 
 ---
 
 ## 2. 다음에 할 일 (우선순위 순)
 
-1. **F13 마무리** (`feat/map-labels`, 담당 에이전트가 있었음 — 재개 시 작업 상태를 먼저 확인)
-   - 글꼴 PBF(`data/work/glyph_out/NotoSansKR-Regular/`)를 팩 디렉터리 `glyphs/NotoSansKR-Regular/`로 복사할 수 있게 한다. 생성 명령은 §6 참고.
-   - 스타일(`app/lib/map/mbtiles_style.dart`)의 `glyphs`가 `file://` 경로를 가리키는지 확인. **에뮬레이터에서 한글 라벨이 실제로 그려지는지 스크린샷으로 확인**(MANUAL). 실패하면 대안을 보고하고 임의로 방식을 바꾸지 않는다.
-   - 팩 manifest `files`에 글꼴 파일 등록. Dart `PackManifest.parse`와 Rust `Manifest::validate`는 기본 3개 파일만 요구하고 추가 항목은 허용한다고 보고됐다(코드 읽기 기준, 테스트로는 미확인).
-   - 게이트 통과 → 커밋 → `feat/map-labels`를 `main`에 `--no-ff` 병합.
-2. **F13 실기기 검증 항목 기록**: 라벨 줌 기준(z14+), 밀집 지역 과밀 여부.
+1. **[필수] 다음 전국 빌드 전에 `pipeline/manifest.py`에 글꼴 등록 반영.** 현재 `manifest.py`는 글꼴 항목을 등록하지 않아서, 다음 빌드 때 글꼴 PBF가 manifest에서 빠진다. `pipeline/glyph/register_glyphs.py`를 빌드 단계에 연결하거나 `manifest.py`가 같은 결과를 내도록 바꾼다. 이 파일은 CRLF 차이가 있어 줄바꿈을 먼저 정리한다(§6-7).
+2. **tasks.md 진행 요약 수치 갱신**: "flutter-app 9/10" 줄이 F11·F13 완료 전 수치다. 실제 개수로 다시 센다.
+3. **F13 실기기 확인 항목**: 라벨 줌 기준(z14+)과 밀집 지역 과밀 여부를 실기기에서 확인한다.
 3. **P2 후보**: F12 경유지(구간별 `plan_route` 체인, 코어 변경 없이 가능), D7 CI, D8 문서.
 4. **보류된 사용자 결정** (§8 참고): 실기기 MANUAL 확인, GitHub 임시 릴리스 정리, R2 토큰 삭제 확인 등.
 
@@ -55,7 +53,7 @@
 ```
 git clone <원격> mukmuk-navi
 git checkout main
-git checkout feat/map-labels        # F13 재개 시
+git checkout -b feat/<새 작업>      # 새 작업은 main에서 분기
 ```
 - 원격 push는 사용자가 명시적으로 요청할 때만 한다(standards §5).
 - 브랜치 이름 규칙: `feat/`, `fix/`, `docs/`, `chore/`, `refactor/`. 병합은 `--no-ff`.
@@ -169,8 +167,8 @@ export PATH="/c/mingw64/bin:$PATH"
 
 ## 9. 재개 체크리스트 (새 세션 첫 10분)
 
-1. `git status`, `git branch --show-current`로 브랜치 확인. `feat/map-labels`에 있는 미커밋 변경을 먼저 파악한다.
-2. `docs/agent/tasks.md`의 F13 항목 상태와 비고를 읽는다.
+1. `git status`, `git branch --show-current`로 브랜치 확인. 미커밋 변경(특히 `pipeline/` 3개 파일의 CRLF 차이)을 먼저 파악한다.
+2. `docs/agent/tasks.md`의 F13 항목(완료)과 §2의 다음 작업(manifest.py 글꼴 등록)을 확인한다.
 3. `flutter --version`(3.47.9), `rustup toolchain list`(msvc·gnu), `adb devices`로 환경을 확인한다.
 4. `data/work/glyph_out/NotoSansKR-Regular/`에 PBF 256개가 있는지 확인한다.
 5. 에뮬레이터 `files/pack`이 전국 팩인지 샘플인지 확인한 뒤 작업한다(§5.2).
