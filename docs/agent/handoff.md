@@ -11,28 +11,29 @@
 
 | 항목 | 상태 |
 | --- | --- |
-| `main` | `e1ca10c`. 앱·코어·파이프라인 P1 대부분 완료. 지도 탭 장소 식별·출발지·전국 검색(F11), 지도 이름 라벨·글꼴 팩(F13) 포함 |
+| `main` | 최종 기준은 `git log -1 main`으로 확인. 앱·코어·파이프라인 P1 완료. 지도 탭 장소 식별·출발지·전국 검색(F11), 지도 이름 라벨·글꼴 팩(F13), 글꼴 manifest 등록(`18c66c1`) 포함 |
 | `feat/map-labels` | `main`에 병합 완료(`e1ca10c`). 더 이상 진행하지 않는다 |
+| 글꼴 manifest 등록 | `pipeline/manifest.py`가 `glyphs/<fontstack>/*.pbf`를 자동 등록하고 NOTICE에 글꼴 라이선스를 넣는다(`18c66c1`). 다음 전국 빌드는 별도 조치 없이 글꼴을 포함한다. 검증: 더미 팩(필수 3개 + 실제 PBF 256개)으로 256개 등록과 NOTICE 확인, 글꼴 없는 팩은 기존과 동일 |
 | F13 지도 라벨 | **완료**. 도로명·POI 이름 라벨(z14+), 글꼴 PBF 256개(18MB, Noto Sans KR OFL). 등록 스크립트 `pipeline/glyph/register_glyphs.py`(커밋 `9184d35`). 에뮬레이터에서 한글 라벨 확인(스크린샷: scratchpad `labels_z15_tempbuild.png`). 글꼴 생성물은 `data/work/glyph_out/NotoSansKR-Regular/`(gitignore) |
 | 전국 팩 백업 | `data/work/backup_national_pack/pack.tar`(975MB, 원본 manifest 포함) |
 | 줌 설정 | `app/lib/config.dart`의 `kMapInitialZoom = 12`. 라벨 확인용 임시 15는 되돌렸고, `main`에는 12가 있다 |
-| 미추적 파일 | `pipeline/glyph/`(빈 폴더로 보임). 커밋 전 확인 |
-| 수정 중인 파일(커밋 금지) | `pipeline/graph/osm_to_graph_tsv.py`, `pipeline/manifest.py`, `pipeline/osm_extract.sh` — **줄바꿈(CRLF)만 다른 차이**. 내용 변경 아님. 스테이징하지 않는다 |
+| 작업 트리 | 깨끗함(마지막 확인 시점). 이전에 보이던 `pipeline/` 3개 파일 "수정됨" 표시는 줄바꿈 경고로 생긴 인덱스 캐시 문제였고, 내용은 HEAD와 같았다(blob 해시 비교로 확인). 그래도 `M`이 보이면 `git update-index --really-refresh` 후 다시 본다 |
 
 ### 작업 목록 요약 (docs/agent/tasks.md 기준)
 - rust-core: 12/12 완료
-- flutter-app: F1~F7, F9~F11, F13 완료. **F8(팩 업데이트 UI)은 P2 — 실제로는 구현·검증됨(첫 실행 다운로드, 48f525f)**. F12(경유지)는 P2 미착수. (진행 요약 수치는 오래됨: 다음 작업에서 다시 센다)
-- data-pipeline: D1~D6 완료. D7(CI 정기 빌드)·D8(전국 빌드 문서)은 P2 미착수
+- rust-core: 12/12 (R1~R12)
+- flutter-app: 12/13. F1~F11, F13 완료. F12(경유지)만 P2 미착수. F8(팩 업데이트)은 구현·검증 완료(첫 실행 다운로드, 48f525f)
+- data-pipeline: 6/8. D1~D6 완료. D7(CI 정기 빌드)·D8(전국 빌드 문서)은 P2 미착수
 
 ---
 
 ## 2. 다음에 할 일 (우선순위 순)
 
-1. **[필수] 다음 전국 빌드 전에 `pipeline/manifest.py`에 글꼴 등록 반영.** 현재 `manifest.py`는 글꼴 항목을 등록하지 않아서, 다음 빌드 때 글꼴 PBF가 manifest에서 빠진다. `pipeline/glyph/register_glyphs.py`를 빌드 단계에 연결하거나 `manifest.py`가 같은 결과를 내도록 바꾼다. 이 파일은 CRLF 차이가 있어 줄바꿈을 먼저 정리한다(§6-7).
-2. **tasks.md 진행 요약 수치 갱신**: "flutter-app 9/10" 줄이 F11·F13 완료 전 수치다. 실제 개수로 다시 센다.
-3. **F13 실기기 확인 항목**: 라벨 줌 기준(z14+)과 밀집 지역 과밀 여부를 실기기에서 확인한다.
-3. **P2 후보**: F12 경유지(구간별 `plan_route` 체인, 코어 변경 없이 가능), D7 CI, D8 문서.
-4. **보류된 사용자 결정** (§8 참고): 실기기 MANUAL 확인, GitHub 임시 릴리스 정리, R2 토큰 삭제 확인 등.
+1. **F13 실기기 확인 항목**: 라벨 줌 기준(z14+)과 밀집 지역 과밀 여부를 실기기에서 확인한다.
+2. **P2 후보**: F12 경유지(구간별 `plan_route` 체인, 코어 변경 없이 가능), D7 CI, D8 문서.
+3. **보류된 사용자 결정** (§8 참고): 실기기 MANUAL 확인, GitHub 임시 릴리스 정리, R2 토큰 삭제 확인 등.
+
+(완료된 항목: 글꼴 manifest 등록 — `18c66c1`)
 
 ---
 
@@ -130,7 +131,7 @@ export PATH="/c/mingw64/bin:$PATH"
 4. **에이전트 위임 규칙**: 설계·구현은 하네스 에이전트(`navi-rust-dev`, `navi-flutter-dev`, `navi-data-dev` 등)에 맡긴다. 메인 세션은 조율·검증·보고만 한다(CLAUDE.md). 이번 세션에서 메인이 직접 구현해 지적받은 적이 있다.
 5. **지도 탭 마커 색(`#e65100`)이 POI 점 색과 같다.** 구분이 어렵다는 피드백이 있었음. 미수정.
 6. **팩 경로 문제 진단**: `PackNotFound`가 나면 먼저 `dart-define` 경로가 `C:/Program Files/Git/...`로 바뀌었는지 확인(APK의 `assets/flutter_assets/kernel_blob.bin`에서 `strings`로 확인 가능).
-7. **pipeline 3개 파일의 CRLF 차이**는 커밋하지 않는다. 정리하려면 별도 `chore` 브랜치에서 줄바꿈만 LF로 통일.
+7. **줄바꿈 경고(LF will be replaced by CRLF)** 는 Windows 환경의 git 경고다. 내용 변경이 없으면 무시한다. `git status`가 `M`을 보이면 내용을 먼저 확인한다(`git diff --ignore-cr-at-eol`, blob 해시 비교). 내용이 같으면 `git checkout -- <파일>`로 되돌린다.
 8. **ODbL**: 팩을 공개 배포하므로 파생 데이터베이스 공개 의무(ODbL 4.4·4.6)와 출처 표기가 적용된다. 앱의 "© OpenStreetMap 기여자 · ODbL" 표기와 출처 화면을 유지한다. 법률 판단은 `docs/human/odbl-review.md` 참고, 최종 확인은 법률 자문.
 
 ---
@@ -167,8 +168,8 @@ export PATH="/c/mingw64/bin:$PATH"
 
 ## 9. 재개 체크리스트 (새 세션 첫 10분)
 
-1. `git status`, `git branch --show-current`로 브랜치 확인. 미커밋 변경(특히 `pipeline/` 3개 파일의 CRLF 차이)을 먼저 파악한다.
-2. `docs/agent/tasks.md`의 F13 항목(완료)과 §2의 다음 작업(manifest.py 글꼴 등록)을 확인한다.
+1. `git status`, `git branch --show-current`로 브랜치 확인. 미커밋 변경이 있으면 내용을 먼저 파악한다.
+2. `docs/agent/tasks.md`의 진행 요약과 §2의 다음 작업(F13 실기기 확인, P2 후보)을 확인한다.
 3. `flutter --version`(3.47.9), `rustup toolchain list`(msvc·gnu), `adb devices`로 환경을 확인한다.
 4. `data/work/glyph_out/NotoSansKR-Regular/`에 PBF 256개가 있는지 확인한다.
 5. 에뮬레이터 `files/pack`이 전국 팩인지 샘플인지 확인한 뒤 작업한다(§5.2).
