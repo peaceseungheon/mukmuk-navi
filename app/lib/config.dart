@@ -7,7 +7,13 @@ const String kPackUrl = String.fromEnvironment('MUKMUK_PACK_URL');
 /// 검색 기본 반경(design.md 6절 2번: KPI 50km 기준으로 기본값 확정 전까지 50km).
 const double kDefaultSearchRadiusKm = 50;
 
+/// 전국 검색 반경(검색 선택지 "전국"). 한국 전역을 덮는 값이다.
+const double kNationwideSearchRadiusKm = 1000;
+
 const int kSearchLimit = 50;
+
+/// 지도 탭 지점 주변 장소 식별 반경(km). 이보다 가까운 장소가 없으면 좌표만 보여준다.
+const double kTapPlaceRadiusKm = 0.3;
 
 /// 위치 갱신 상한 10Hz (design.md 2.3절 5번, 4절 프레임 예산).
 const Duration kPositionMinInterval = Duration(milliseconds: 100);

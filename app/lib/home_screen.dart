@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Route;
+import 'package:maplibre_gl/maplibre_gl.dart' show LatLng;
 import 'package:mukmuk_app/app_services.dart';
 import 'package:mukmuk_app/attribution_dialog.dart';
 import 'package:mukmuk_app/engine/engine_error_text.dart';
 import 'package:mukmuk_app/ffibindings/api/types.dart';
 import 'package:mukmuk_app/map/mbtiles_style.dart';
 import 'package:mukmuk_app/map/navi_map.dart';
+import 'package:mukmuk_app/map/place_sheet.dart';
+import 'package:mukmuk_app/map/tapped_place.dart';
 import 'package:mukmuk_app/nav/navigation_screen.dart';
 import 'package:mukmuk_app/packs/pack_update_banner.dart';
 import 'package:mukmuk_app/search/search_screen.dart';
@@ -29,8 +32,11 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
     route: widget.services.nav.route,
     position: widget.services.nav.position,
+    tapMarker: _tapMarker,
+    onMapTap: _onMapTap,
   );
   bool _planning = false;
+  final ValueNotifier<GeoPoint?> _tapMarker = ValueNotifier(null);
 
   AppServices get _s => widget.services;
 
@@ -45,7 +51,32 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _s.gpsNotice.removeListener(_onGpsNotice);
+    _tapMarker.dispose();
     super.dispose();
+  }
+
+  /// 지도 탭: 탭 지점에 마커를 두고 주변 장소를 찾아 시트로 보여준다.
+  Future<void> _onMapTap(LatLng at) async {
+    if (_planning) return;
+    final tap = GeoPoint(lat: at.latitude, lon: at.longitude);
+    _tapMarker.value = tap;
+    try {
+      final place = await resolveTappedPlace(_s.engine, tap);
+      if (!mounted) return;
+      final action = await showPlaceSheet(context, place);
+      if (!mounted || action == null) return;
+      switch (action) {
+        case PlaceAction.goHere:
+          await _planTo(place.toPoi());
+        case PlaceAction.setOrigin:
+          _s.pickedOrigin.value = place.point;
+          _showMessage('출발지를 지정했습니다.');
+      }
+    } catch (e) {
+      if (mounted) _showMessage(engineErrorText(e));
+    } finally {
+      if (mounted) _tapMarker.value = null;
+    }
   }
 
   void _onGpsNotice() {
@@ -131,8 +162,24 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Positioned(
             left: 16,
-            right: 16,
             top: MediaQuery.paddingOf(context).top + 84,
+            child: ValueListenableBuilder<GeoPoint?>(
+              valueListenable: _s.pickedOrigin,
+              builder: (context, origin, _) {
+                if (origin == null) return const SizedBox.shrink();
+                return InputChip(
+                  avatar: const Icon(Icons.trip_origin, size: 18),
+                  label: const Text('출발: 지정한 위치'),
+                  onDeleted: () => _s.pickedOrigin.value = null,
+                  deleteButtonTooltipMessage: '현재 위치로 출발',
+                );
+              },
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            top: MediaQuery.paddingOf(context).top + 132,
             child: TtsInstallBanner(ttsAvailable: _s.ttsAvailable),
           ),
           if (_s.packUpdate case final pu?)
