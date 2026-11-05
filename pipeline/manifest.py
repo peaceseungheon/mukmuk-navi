@@ -2,7 +2,8 @@
 """⑦ manifest.json 작성 — 설계 docs/agent/design.md 3.1절.
 
 팩 디렉터리의 고정 레이아웃(map/korea.mbtiles, graph/korea.graph.bin, poi/korea.poi.sqlite)을
-검사하고 파일별 size·sha256을 기록한다. Python stdlib 만 사용한다.
+검사하고 파일별 size·sha256을 기록한다. 글꼴 PBF(glyphs/<fontstack>/*.pbf)가 있으면 함께 등록한다.
+Python stdlib 만 사용한다.
 
 사용법:
   python3 pipeline/manifest.py <pack_dir> --pack-version 2026.11 --osm-date 2026-11-02
@@ -32,6 +33,7 @@ REQUIRED_FILES = (
     "poi/korea.poi.sqlite",
 )
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+GLYPH_DIR = "glyphs"  # 글꼴 PBF 루트(등록 대상, 선택 항목)
 
 # ODbL 1.0 고지 (docs/agent/odbl-review.md 4.2 b, 4.3, OSM Attribution Guidelines)
 LICENSE = "ODbL-1.0"
@@ -41,8 +43,11 @@ NOTICE_FILE = "NOTICE.txt"
 BUILD_TOOL = "pipeline/build_all (pipeline/manifest.py)"
 
 
-def render_notice(pack_version: str, osm_date: str) -> str:
+def render_notice(pack_version: str, osm_date: str, font_stacks: tuple[str, ...] = ()) -> str:
     """팩 루트에 두는 NOTICE.txt 본문. 압축을 풀면 바로 보이는 위치에 둔다."""
+    font_lines = "".join(
+        f"  글꼴 스택 {stack}: Noto Sans KR (SIL Open Font License 1.1)\n" for stack in font_stacks
+    )
     return (
         "묵묵(MukMuk) 데이터 팩 고지 (NOTICE)\n"
         "\n"
@@ -63,6 +68,7 @@ def render_notice(pack_version: str, osm_date: str) -> str:
         "  이 팩(map/, graph/, poi/)은 OpenStreetMap 데이터에서 파생된 데이터베이스(Derivative Database)다.\n"
         "  이 팩을 공개적으로 배포하거나 제공할 때는 ODbL 1.0 조건을 따른다.\n"
         "  이 팩으로 만든 지도 또는 검색 결과를 공개적으로 표시할 때는 위 출처를 함께 표시한다.\n"
+        + (("\n[글꼴]\n" + font_lines) if font_lines else "")
     )
 
 
@@ -72,6 +78,24 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: f.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def glyph_entries(pack_dir: Path) -> dict:
+    """glyphs/<fontstack>/<range>.pbf 를 files 항목으로 모은다. 글꼴 PBF가 없으면 빈 dict."""
+    entries = {}
+    root = pack_dir / GLYPH_DIR
+    if not root.is_dir():
+        return entries
+    for stack_dir in sorted(p for p in root.iterdir() if p.is_dir()):
+        for pbf in sorted(stack_dir.glob("*.pbf")):
+            rel = f"{GLYPH_DIR}/{stack_dir.name}/{pbf.name}"
+            entries[rel] = {"size": pbf.stat().st_size, "sha256": sha256_file(pbf)}
+    return entries
+
+
+def font_stacks(entries: dict) -> tuple[str, ...]:
+    """glyph 항목 키에서 글꼴 스택 이름만 뽑는다(정렬, 중복 없음)."""
+    return tuple(sorted({key.split("/")[1] for key in entries}))
 
 
 def built_at() -> str:
@@ -90,6 +114,9 @@ def build(pack_dir: Path, pack_version: str, osm_date: str, ngii: bool, timestam
         if not path.is_file():
             raise ValueError(f"필수 파일 없음: {path}")
         files[rel] = {"size": path.stat().st_size, "sha256": sha256_file(path)}
+    glyphs = glyph_entries(pack_dir)
+    files.update(glyphs)
+    stacks = font_stacks(glyphs)
 
     manifest = {
         "format_version": FORMAT_VERSION,
@@ -106,7 +133,7 @@ def build(pack_dir: Path, pack_version: str, osm_date: str, ngii: bool, timestam
 
     # NOTICE.txt 는 팩 루트에 쓰고, files(sha256 대상)에는 넣지 않는다.
     notice = pack_dir / NOTICE_FILE
-    notice.write_text(render_notice(pack_version, osm_date), encoding="utf-8", newline="\n")
+    notice.write_text(render_notice(pack_version, osm_date, stacks), encoding="utf-8", newline="\n")
 
     out = pack_dir / "manifest.json"
     out.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
