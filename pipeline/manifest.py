@@ -8,6 +8,9 @@
   python3 pipeline/manifest.py <pack_dir> --pack-version 2026.11 --osm-date 2026-11-02
 
 재현 빌드: SOURCE_DATE_EPOCH 가 있으면 built_at 에 그 시각을 쓴다.
+
+라이선스: ODbL 1.0 고지를 manifest 필드와 팩 루트의 NOTICE.txt 로 함께 남긴다.
+NOTICE.txt 는 files 목록(sha256 대상)에 넣지 않는다.
 """
 
 from __future__ import annotations
@@ -29,6 +32,38 @@ REQUIRED_FILES = (
     "poi/korea.poi.sqlite",
 )
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+# ODbL 1.0 고지 (docs/agent/odbl-review.md 4.2 b, 4.3, OSM Attribution Guidelines)
+LICENSE = "ODbL-1.0"
+LICENSE_URI = "https://opendatacommons.org/licenses/odbl/1-0/"
+ATTRIBUTION = "© OpenStreetMap contributors"
+NOTICE_FILE = "NOTICE.txt"
+BUILD_TOOL = "pipeline/build_all (pipeline/manifest.py)"
+
+
+def render_notice(pack_version: str, osm_date: str) -> str:
+    """팩 루트에 두는 NOTICE.txt 본문. 압축을 풀면 바로 보이는 위치에 둔다."""
+    return (
+        "묵묵(MukMuk) 데이터 팩 고지 (NOTICE)\n"
+        "\n"
+        f"팩 버전: {pack_version}\n"
+        f"OSM 데이터 기준일: {osm_date}\n"
+        f"팩 형식 버전: {FORMAT_VERSION}\n"
+        f"생성 도구: {BUILD_TOOL}\n"
+        "\n"
+        "[데이터 출처]\n"
+        f"  {ATTRIBUTION}\n"
+        "  OpenStreetMap, https://www.openstreetmap.org/copyright\n"
+        "\n"
+        "[라이선스]\n"
+        f"  Open Database License (ODbL) 1.0\n"
+        f"  {LICENSE_URI}\n"
+        "\n"
+        "[고지]\n"
+        "  이 팩(map/, graph/, poi/)은 OpenStreetMap 데이터에서 파생된 데이터베이스(Derivative Database)다.\n"
+        "  이 팩을 공개적으로 배포하거나 제공할 때는 ODbL 1.0 조건을 따른다.\n"
+        "  이 팩으로 만든 지도 또는 검색 결과를 공개적으로 표시할 때는 위 출처를 함께 표시한다.\n"
+    )
 
 
 def sha256_file(path: Path) -> str:
@@ -61,20 +96,37 @@ def build(pack_dir: Path, pack_version: str, osm_date: str, ngii: bool, timestam
         "pack_version": pack_version,
         "osm_date": osm_date,
         "ngii": ngii,
+        "license": LICENSE,
+        "license_uri": LICENSE_URI,
+        "attribution": ATTRIBUTION,
+        "notice_file": NOTICE_FILE,
         "files": files,
         "built_at": timestamp,
     }
 
+    # NOTICE.txt 는 팩 루트에 쓰고, files(sha256 대상)에는 넣지 않는다.
+    notice = pack_dir / NOTICE_FILE
+    notice.write_text(render_notice(pack_version, osm_date), encoding="utf-8", newline="\n")
+
     out = pack_dir / "manifest.json"
-    out.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
 
     # 다시 읽어 JSON 유효성과 필수 필드 존재를 확인한다.
     written = json.loads(out.read_text(encoding="utf-8"))
-    for key in ("format_version", "pack_version", "osm_date", "ngii", "files", "built_at"):
+    required = (
+        "format_version", "pack_version", "osm_date", "ngii",
+        "license", "license_uri", "attribution", "notice_file",
+        "files", "built_at",
+    )
+    for key in required:
         if key not in written:
             raise AssertionError(f"manifest.json 에 {key} 없음")
     if written["files"] != files:
         raise AssertionError("manifest.json 파일 항목이 계산값과 다름")
+    if NOTICE_FILE in written["files"]:
+        raise AssertionError("NOTICE.txt 는 files 목록에 넣지 않는다")
+    if not notice.is_file():
+        raise AssertionError(f"{NOTICE_FILE} 생성 실패")
     return manifest
 
 

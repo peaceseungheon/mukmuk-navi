@@ -150,6 +150,10 @@ pack_dir/
   "pack_version": "2026.11",
   "osm_date": "2026-10-28",
   "ngii": false,
+  "license": "ODbL-1.0",
+  "license_uri": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "attribution": "© OpenStreetMap contributors",
+  "notice_file": "NOTICE.txt",
   "files": {
     "map/korea.mbtiles":    { "size": 0, "sha256": "..." },
     "graph/korea.graph.bin":{ "size": 0, "sha256": "..." },
