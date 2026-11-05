@@ -9,7 +9,7 @@
 설계: 승인 2026-11-03 (F12 설계 보완 승인 2026-11-05) | 구현: P1 전체 완료(F12·D7·D8은 P2 미착수) | 검증: 승인 2026-11-04 (회차 2, MANUAL 9건 승인) | 배포 준비: 진행 중 2026-11-04
 
 ## 진행 요약
-rust-core 12/12 | flutter-app 12/13 (F1~F11·F13 완료, F12는 P2 진행 중 — 하위 F12a~F12g 1/7, 다음 착수: F12b·F12c) | data-pipeline 6/8 (P1 D1~D6 완료, D7·D8은 P2)
+rust-core 12/12 | flutter-app 12/13 (F1~F11·F13 완료, F12는 P2 진행 중 — 하위 F12a~F12g 2/7, 다음 착수: F12c) | data-pipeline 6/8 (P1 D1~D6 완료, D7·D8은 P2)
 
 ## rust-core
 ### 데이터 팩·그래프 로딩
@@ -44,7 +44,7 @@ rust-core 12/12 | flutter-app 12/13 (F1~F11·F13 완료, F12는 P2 진행 중 �
 - [x] F11 지도 탭 장소 식별 + 출발지·목적지 지정 + 전국 검색 반경 (의존: F2, F3, R9) [P1] — 완료조건: 지도 탭 → nearby_poi로 주변 장소 조회 → 시트에서 "여기로 가기"(경로 계획)·"출발지로 설정" 동작, 탭 지점 마커 표시, 검색 반경에 "전국" 추가, 출발지 지정 시 검색·경로 기준점이 바뀜 — 비고: 코어 `nearby_poi`(core/core `nearby_poi`, 테스트 3건)·FFI 추가(설계 2.2절 갱신), 앱 단위 테스트 신규 7건(`tapped_place_test`, `place_sheet_test`, `radius_choice_test`), 전체 52건 통과, analyze 0건. 실기기 탭 반응·마커 위치·출발지 칩 동작은 MANUAL. 전국 반경(1000km) 검색의 0.5초 KPI는 전국 팩에서 MANUAL(승인) 측정 필요
 - [ ] F12 경유지 입력 (의존: F12a~F12g) [P2] — 완료조건: 하위 F12a~F12g가 모두 [x]. 출발지·목적지 사이 경유지를 추가하면 구간별 plan_route를 이어 붙여 하나의 경로(polyline·안내)로 표시, 재탐색 시 경유 순서 유지 — 비고: 설계 design.md 7절(2026-11-05 보완). 코어·FFI 변경 없음, BLOCKED 없음(7.8). 코어 동작 계약은 design 2.2절. 차량(`car`)만 대상
   - [x] F12a 구간 결합 순수 함수 (의존: F11) [P2] — 완료조건: `lib/nav/trip.dart`에 `Stop`·상수 4개·`haversineM`·`dedupeStops`·`combineLegs`(design 7.1·7.2)가 있고 `test/nav/trip_test.dart`(이음점 1m 중복 제거, 거리·시간 합, 구간 1개 그대로, 20m 이내 지점 제거·순서 유지, 알려진 두 점 거리) 통과 — 비고(2026-11-05): 완료. trip_test 9건 통과, analyze 0건, flutter test 전체 통과
-  - [ ] F12b 경유지 문구 함수 (의존: 없음) [P2] — 완료조건: `instruction_text.dart`에 `waypointArrivalSpeech(n, nextIsDestination:)`가 design 7.6 두 문구를 정확히 반환하고 단위 테스트 2건 통과
+  - [x] F12b 경유지 문구 함수 (의존: 없음) [P2] — 완료조건: `instruction_text.dart`에 `waypointArrivalSpeech(n, nextIsDestination:)`가 design 7.6 두 문구를 정확히 반환하고 단위 테스트 2건 통과 — 비고(2026-11-05): 완료. 단위 테스트 2건 통과
   - [ ] F12c 경유지 입력 UI·상태 (의존: F12a) [P2] — 완료조건: `AppServices.waypoints`(최대 3, 초과 시 스낵바), 장소 시트 "경유지로 추가"(`PlaceAction.addWaypoint`), 검색 결과 trailing 아이콘과 `SearchPick` pop 값, 홈 경유지 칩(×로 삭제)이 design 7.1대로 동작하고 시트·검색 위젯 테스트 통과
   - [ ] F12d 체인 경로 계획 (의존: F12a, F12c) [P2] — 완료조건: `planTrip`이 겹친 지점을 뺀 구간을 역순으로 plan_route 호출하고 실패 시 `TripPlanException(legIndex)`를 던지며, 홈 `_planTo`가 이를 써서 `nav.startTrip`(기존 `startRoute` 삭제) 후 주행 화면으로 가고 실패 시 구간 이름 문구를 보여줌. 가짜 엔진 테스트로 호출 순서·실패 인덱스 확인, 경유지 0개 동작은 기존과 같음(기존 테스트 통과)
   - [ ] F12e 주행 중 구간 전환 (의존: F12b, F12d) [P2] — 완료조건: 컨트롤러가 중간 `Arrived`(판정 A)와 이탈+60m 이내(판정 B) 중 먼저 온 것 하나로 `_advanceLeg`를 실행(전환 중 위치 미전송, 경유지 문구 발화, 다음 구간 plan_route, 실패 시 경유지 기준 1회 재시도 후 notice·`_legFailed`), 새 구간 Depart 발화 억제, 마지막 `Arrived`만 `arrived=true`. 컨트롤러 테스트 design 7.9 (a)(b)(c)(d)(f) 통과
