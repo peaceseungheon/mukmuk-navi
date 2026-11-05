@@ -10,6 +10,8 @@
 
 **개발 표준:** 코드·테스트·브랜치·커밋 규칙은 [docs/agent/standards.md](docs/agent/standards.md)(요약: [docs/human/standards.md](docs/human/standards.md))를 따른다. 커밋에는 공동작성자 문구를 넣지 않는다.
 
+**인수인계:** 다른 환경에서 개발을 이어갈 때는 [docs/agent/handoff.md](docs/agent/handoff.md)(요약: [docs/human/handoff.md](docs/human/handoff.md))를 먼저 읽는다. 현재 상태·환경 준비·빌드 명령·함정·열린 결정이 들어 있다.
+
 **변경 이력:**
 | 날짜 | 변경 내용 | 대상 | 사유 |
 | --- | --- | --- | --- |
@@ -18,3 +20,4 @@
 | 2026-11-03 | 단계 상태(승인 기록) 절, MANUAL(승인)/BLOCKED-ENV 게이트, 병렬화 근거, 데이터 팩 CI 입력·보관 규칙 보완 | orchestrator, artifact-spec, navi-release, datapack-build | 코드 리뷰 지적(MEDIUM 5건) 반영 |
 | 2026-11-03 | tasks.md 형식 강화(최소 단위, 완료조건·우선순위 필드, `[~]` 상태, 진행 요약, PRD 추적 표) | artifact-spec, navi-architect, orchestrator, rust/flutter/data-dev | 문서만 보고 AI가 진행 상황을 파악하도록 요구 |
 | 2026-11-04 | 개발 표준 문서 신설(`docs/agent/standards.md`, `docs/human/standards.md`), 기능 브랜치 병합 규칙, 공동작성자 문구 금지 | standards(신규), CLAUDE.md, artifact-spec | 코드·커밋 기준 문서 부재. 사용자 결정(2트랙, feature→main --no-ff, 커밋 제목 한국어·문구 없음) 반영 |
+| 2026-11-05 | 인수인계 문서 신설(`docs/agent/handoff.md`, `docs/human/handoff.md`), CLAUDE.md에 인수인계 링크 추가 | handoff(신규), CLAUDE.md | 다른 환경에서 개발을 이어가기 위해 상태·환경·함정을 한 곳에 정리 |
