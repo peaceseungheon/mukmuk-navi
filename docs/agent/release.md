@@ -124,3 +124,12 @@
 - 라이선스: ODbL 1.0 — NOTICE.txt와 manifest의 license·license_uri·attribution 필드로 고지. 공개 배포 조건은 docs/human/odbl-review.md 참고.
 - USER: 법률 자문 여부 결정(벡터 타일 분류), GitHub 초안 릴리스(`pack-sample-2026.11`, 이전 zip 자산 포함) 정리 여부 결정.
 - 미확인: 앱이 공개 주소에서 실제로 내려받는 흐름(Wi-Fi 연결 상태에서 자동 확인·다운로드)의 end-to-end 확인은 이번 회차에 하지 못함.
+
+## 전국 데이터 팩 공개 배포 (R2, 2026-11-05)
+- 경로: `https://pub-b41149f0f441435e93b044e49cd215f2.r2.dev/2026.11-full/` (버킷 mukmuk-packs의 `2026.11-full/` 접두사)
+- 팩 버전 2026.11, OSM 기준일 2026-11-02, format_version 1, 범위 124.0,33.0–132.0,39.0
+- 줌: minzoom 6, maxzoom 13 (설계 미결 4 결정). 밀집 지역 표시는 `--drop-densest-as-needed`로 제한되며 실기기 확인 필요
+- 구성: manifest.json, NOTICE.txt, map/korea.mbtiles(281MB), graph/korea.graph.bin(653MB), poi/korea.poi.sqlite(41MB). 전체 약 975MB
+- 검증: 5개 파일 모두 공개 주소에서 받아 sha256 일치. 스모크 통과(경로 396m, FTS 1건, 노드 9,319,377)
+- 앱 빌드 인자 예: `--dart-define=MUKMUK_PACK_URL=https://pub-b41149f0f441435e93b044e49cd215f2.r2.dev/2026.11-full/`
+- USER: 채팅에 노출된 R2 토큰(Access Key ID·Secret)을 대시보드에서 삭제했는지 확인. 공개 주소 사용 조건(ODbL)은 docs/human/odbl-review.md 참고.
