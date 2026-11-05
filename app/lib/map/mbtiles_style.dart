@@ -12,17 +12,27 @@ const List<String> kMbtilesLayerIds = [
 
 const String kMbtilesSourceId = 'korea';
 
-/// 로컬 mbtiles(MVT)를 소스로 쓰는 MapLibre 스타일 JSON. 네트워크 리소스를 참조하지 않는다.
-/// [mbtilesPath]는 팩 디렉터리 기준 `map/korea.mbtiles`의 절대 경로.
-String buildMbtilesStyle(String mbtilesPath) {
-  final url = 'mbtiles://${mbtilesPath.replaceAll('\\', '/')}';
+/// 팩 안 글꼴 폴더 이름(`glyphs/<fontstack>/<range>.pbf`). 공백 없이 둬서 URL 인코딩을 피한다.
+const String kGlyphFontStack = 'NotoSansKR-Regular';
+
+/// 도로명 라벨을 켜는 최소 줌. 그 아래는 도로가 많아 과밀해진다.
+const int kRoadLabelMinZoom = 14;
+
+/// POI 이름을 켜는 최소 줌. POI 점은 z12부터 보이지만 이름은 z14부터 보인다.
+const int kPoiLabelMinZoom = 14;
+
+/// 로컬 팩의 mbtiles(MVT)와 글꼴(glyph PBF)을 소스로 쓰는 MapLibre 스타일 JSON.
+/// 네트워크 리소스를 참조하지 않는다. [packDir]는 `map/`, `glyphs/`가 놓인 팩 디렉터리 절대 경로.
+String buildMbtilesStyle({required String packDir}) {
+  final base = packDir.replaceAll('\\', '/');
   final style = <String, Object>{
     'version': 8,
     'name': 'mukmuk-offline',
+    'glyphs': 'file://$base/glyphs/{fontstack}/{range}.pbf',
     'sources': {
       kMbtilesSourceId: {
         'type': 'vector',
-        'url': url,
+        'url': 'mbtiles://$base/map/korea.mbtiles',
         'attribution': '© OpenStreetMap 기여자 · ODbL',
       },
     },
@@ -45,10 +55,75 @@ String buildMbtilesStyle(String mbtilesPath) {
         'minzoom': 12,
         'paint': {'circle-radius': 3, 'circle-color': '#e65100'},
       },
+      _roadLabel(),
+      _poiLabel(),
     ],
   };
   return jsonEncode(style);
 }
+
+/// 이름 표시 식. 한국 OSM은 `name`이 한글인 경우가 대부분이라 `name`을 먼저 본다.
+const List<Object> _nameExpr = [
+  'coalesce',
+  ['get', 'name'],
+  ['get', 'name:ko'],
+];
+
+/// 도로명: 선을 따라 그린다. 라벨 충돌은 MapLibre가 자동으로 피한다.
+Map<String, Object> _roadLabel() => {
+  'id': 'road_labels',
+  'type': 'symbol',
+  'source': kMbtilesSourceId,
+  'source-layer': 'roads',
+  'minzoom': kRoadLabelMinZoom,
+  'filter': [
+    'all',
+    _geom('LineString'),
+    ['has', 'name'],
+  ],
+  'layout': {
+    'symbol-placement': 'line',
+    'text-field': ['get', 'name'],
+    'text-font': [kGlyphFontStack],
+    'text-size': 11,
+  },
+  'paint': {
+    'text-color': '#4a4a4a',
+    'text-halo-color': '#ffffff',
+    'text-halo-width': 1.5,
+  },
+};
+
+/// POI 이름: 점 아래에 둔다. 이름이 없는 점은 그리지 않는다.
+Map<String, Object> _poiLabel() => {
+  'id': 'poi_labels',
+  'type': 'symbol',
+  'source': kMbtilesSourceId,
+  'source-layer': 'poi',
+  'minzoom': kPoiLabelMinZoom,
+  'filter': [
+    'all',
+    _geom('Point'),
+    [
+      'any',
+      ['has', 'name'],
+      ['has', 'name:ko'],
+    ],
+  ],
+  'layout': {
+    'text-field': _nameExpr,
+    'text-font': [kGlyphFontStack],
+    'text-size': 11,
+    'text-anchor': 'top',
+    'text-offset': [0, 0.8],
+    'text-max-width': 8,
+  },
+  'paint': {
+    'text-color': '#3e2723',
+    'text-halo-color': '#ffffff',
+    'text-halo-width': 1.5,
+  },
+};
 
 /// 타일의 한 source-layer에 점·선·면이 섞여 있어(OSM 원본) 스타일 레이어 종류에 맞는
 /// 지오메트리만 통과시킨다. 안 그러면 line 레이어가 점/면을 받아 경고가 난다.
